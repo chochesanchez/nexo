@@ -31,6 +31,11 @@ final class RecoleccionRegistro {
     var lat         : Double = 0
     var lng         : Double = 0
     var fecha       : Date   = Date()
+    var imageData   : Data?
+    var notas       : String?
+    var locationName: String?
+    var route       : String   = ""
+    var instructions: [String] = []
 
     init(material: NEXOMaterial, lat: Double = 19.4326, lng: Double = -99.1332) {
         self.uuid        = UUID()
@@ -42,6 +47,11 @@ final class RecoleccionRegistro {
         self.lat         = lat
         self.lng         = lng
         self.fecha       = Date()
+        self.route        = material.route.rawValue
+        self.instructions = material.instructions
+        self.imageData    = nil
+        self.notas        = nil
+        self.locationName = nil
     }
 
     // Extrae el primer número del string de valor ("$18 MXN/kg" → 18.0)
@@ -83,6 +93,7 @@ struct HistorialRecolectorView: View {
     @Environment(\.modelContext) private var context
 
     @State private var periodo: Periodo = .semana
+    @State private var detallePresentado: RecoleccionWrapper? = nil
 
     enum Periodo: String, CaseIterable {
         case semana = "Semana"
@@ -198,6 +209,16 @@ struct HistorialRecolectorView: View {
             }
             .navigationTitle("Mi historial")
             .navigationBarTitleDisplayMode(.large)
+            .sheet(item: $detallePresentado) { wrapper in
+                RecoleccionDetailView(
+                    registros: wrapper.lista,
+                    currentIndex: wrapper.lista.firstIndex(where: { $0.uuid == wrapper.registro.uuid }) ?? 0,
+                    isPresented: Binding(
+                        get: { detallePresentado != nil },
+                        set: { if !$0 { detallePresentado = nil } }
+                    )
+                )
+            }
             .toolbar {
                 if !registros.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -374,38 +395,49 @@ struct HistorialRecolectorView: View {
     }
 
     private func recenteRow(_ reg: RecoleccionRegistro) -> some View {
-        HStack(spacing: 12) {
-            // Ícono
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.nexoMint)
-                .frame(width: 36, height: 36)
-                .overlay {
-                    Image(systemName: reg.icon)
-                        .font(.system(size: 15, weight: .light))
-                        .foregroundStyle(Color.nexoBrand)
+        Button {
+            detallePresentado = RecoleccionWrapper(registro: reg, lista: registrosFiltrados)
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.nexoMint)
+                    .frame(width: 36, height: 36)
+                    .overlay {
+                        Image(systemName: reg.icon)
+                            .font(.system(size: 15, weight: .light))
+                            .foregroundStyle(Color.nexoBrand)
+                    }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(reg.displayName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(uiColor: .label))
+                    Text(reg.fecha, style: .relative)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
                 }
 
-            // Info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(reg.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(uiColor: .label))
-                Text(reg.fecha, style: .relative)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color(uiColor: .tertiaryLabel))
-            }
+                Spacer()
 
-            Spacer()
+                if let data = reg.imageData, let uiImg = UIImage(data: data) {
+                    Image(uiImage: uiImg)
+                        .resizable().scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 7))
+                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+                }
 
-            // Valor
-            if reg.valorNumerico > 0 {
-                Text(String(format: "$%.0f", reg.valorNumerico))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(hex: "7A5F00"))
+                if reg.valorNumerico > 0 {
+                    Text(String(format: "$%.0f", reg.valorNumerico))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color(hex: "7A5F00"))
+                }
             }
+            .padding(.horizontal, Sp.md)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, Sp.md)
-        .padding(.vertical, 10)
+        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) { context.delete(reg) } label: {
                 Label("Eliminar", systemImage: "trash")
@@ -445,6 +477,14 @@ struct HistorialRecolectorView: View {
             Spacer()
         }
     }
+}
+
+// MARK: - RecoleccionWrapper
+
+struct RecoleccionWrapper: Identifiable {
+    let registro: RecoleccionRegistro
+    let lista: [RecoleccionRegistro]
+    var id: UUID { registro.uuid }
 }
 
 #Preview {

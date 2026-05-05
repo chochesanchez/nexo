@@ -30,6 +30,8 @@ final class FichaRegistro {
     var lng           : Double
     var supabaseId    : String?  // UUID del listing en Supabase
     var imageData     : Data?
+    var notas         : String?
+    var locationName  : String?
 
     init(material: NEXOMaterial,
          instruccionFM: String? = nil,
@@ -49,6 +51,8 @@ final class FichaRegistro {
         self.ocrText       = ocrText
         self.lat           = lat
         self.lng           = lng
+        self.notas         = nil
+        self.locationName  = nil
         HistorialView.writeWidgetData()
     }
 }
@@ -84,10 +88,20 @@ struct HistorialView: View {
     @State private var publishError  : String? = nil
     @State private var showSuccess   = false
     @State private var successCount  = 0
+    @State private var modoSeleccion : Bool = false
+    @State private var detallePresentado: FichaWrapper? = nil
 
     private var pendientes : [FichaRegistro] { todas.filter { $0.estado == "pendiente" } }
     private var enMapa     : [FichaRegistro] { todas.filter { $0.estado == "activa"    } }
     private var recogidas  : [FichaRegistro] { todas.filter { $0.estado == "recogida"  } }
+
+    private var listaActual: [FichaRegistro] {
+        switch segmento {
+        case .pendientes: return pendientes
+        case .enMapa:     return enMapa
+        case .recogidas:  return recogidas
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -120,12 +134,12 @@ struct HistorialView: View {
                         .padding(.horizontal, Sp.lg)
                         .padding(.top, Sp.sm)
                         // Espacio para el botón flotante
-                        .padding(.bottom, seleccionados.isEmpty ? 24 : 100)
+                        .padding(.bottom, (modoSeleccion && !seleccionados.isEmpty) ? 100 : 24)
                     }
                 }
 
                 // Botón bulk flotante
-                if !seleccionados.isEmpty && segmento == .pendientes {
+                if modoSeleccion && !seleccionados.isEmpty && segmento == .pendientes {
                     bulkShareButton
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -136,6 +150,16 @@ struct HistorialView: View {
             .alert("Error al compartir", isPresented: .constant(publishError != nil)) {
                 Button("OK") { publishError = nil }
             } message: { Text(publishError ?? "") }
+            .sheet(item: $detallePresentado) { wrapper in
+                FichaDetailView(
+                    fichas: wrapper.lista,
+                    currentIndex: wrapper.lista.firstIndex(where: { $0.persistentModelID == wrapper.ficha.persistentModelID }) ?? 0,
+                    isPresented: Binding(
+                        get: { detallePresentado != nil },
+                        set: { if !$0 { detallePresentado = nil } }
+                    )
+                )
+            }
             .overlay {
                 if showSuccess { successOverlay }
             }
@@ -207,39 +231,22 @@ struct HistorialView: View {
                 detalle: "Escanea residuos y guárdalos aquí.\nDesde aquí los compartes todos de una vez."
             )
         } else {
-            // Header con "seleccionar todo"
-            HStack {
-                Text("Selecciona las que quieras compartir")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(Color(uiColor: .secondaryLabel))
-                Spacer()
-                Button {
-                    withAnimation {
-                        if seleccionados.count == pendientes.count {
-                            seleccionados.removeAll()
-                        } else {
-                            seleccionados = Set(pendientes.map { $0.persistentModelID })
-                        }
-                    }
-                } label: {
-                    Text(seleccionados.count == pendientes.count ? "Quitar todo" : "Seleccionar todo")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.nexoBrand)
-                }
-            }
-            .padding(.bottom, 4)
-
             ForEach(pendientes) { ficha in
                 PendienteRow(
-                    ficha       : ficha,
-                    isSelected  : seleccionados.contains(ficha.persistentModelID)
+                    ficha         : ficha,
+                    modoSeleccion : modoSeleccion,
+                    isSelected    : seleccionados.contains(ficha.persistentModelID)
                 ) {
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        if seleccionados.contains(ficha.persistentModelID) {
-                            seleccionados.remove(ficha.persistentModelID)
-                        } else {
-                            seleccionados.insert(ficha.persistentModelID)
+                    if modoSeleccion {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            if seleccionados.contains(ficha.persistentModelID) {
+                                seleccionados.remove(ficha.persistentModelID)
+                            } else {
+                                seleccionados.insert(ficha.persistentModelID)
+                            }
                         }
+                    } else {
+                        detallePresentado = FichaWrapper(ficha: ficha, lista: pendientes)
                     }
                 } onDelete: {
                     context.delete(ficha)
@@ -260,10 +267,11 @@ struct HistorialView: View {
             )
         } else {
             ForEach(enMapa) { ficha in
-                ActivaRow(ficha: ficha) {
-                    // Marcar como recogida manualmente
-                    withAnimation { ficha.estado = "recogida" }
-                }
+                ActivaRow(
+                    ficha: ficha,
+                    onTap: { detallePresentado = FichaWrapper(ficha: ficha, lista: enMapa) },
+                    onRecoger: { withAnimation { ficha.estado = "recogida" } }
+                )
             }
         }
     }
@@ -280,7 +288,9 @@ struct HistorialView: View {
             )
         } else {
             ForEach(recogidas) { ficha in
-                RecogidaRow(ficha: ficha)
+                RecogidaRow(ficha: ficha) {
+                    detallePresentado = FichaWrapper(ficha: ficha, lista: recogidas)
+                }
             }
         }
     }
@@ -397,13 +407,45 @@ struct HistorialView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        if segmento == .pendientes && !pendientes.isEmpty {
+        if modoSeleccion {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancelar") {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        modoSeleccion = false
+                        seleccionados.removeAll()
+                    }
+                }
+                .foregroundStyle(Color.nexoBrand)
+            }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(role: .destructive) {
-                    pendientes.forEach { context.delete($0) }
+                Button(seleccionados.count == listaActual.count ? "Quitar todo" : "Seleccionar todo") {
+                    withAnimation {
+                        if seleccionados.count == listaActual.count {
+                            seleccionados.removeAll()
+                        } else {
+                            seleccionados = Set(listaActual.map { $0.persistentModelID })
+                        }
+                    }
+                }
+                .foregroundStyle(Color.nexoBrand)
+            }
+        } else if !todas.isEmpty {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    if segmento == .pendientes && !pendientes.isEmpty {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) { modoSeleccion = true }
+                        } label: {
+                            Label("Seleccionar", systemImage: "checkmark.circle")
+                        }
+                        Button(role: .destructive) {
+                            pendientes.forEach { context.delete($0) }
+                        } label: {
+                            Label("Borrar todas las pendientes", systemImage: "trash")
+                        }
+                    }
                 } label: {
-                    Image(systemName: "trash")
-                        .foregroundStyle(.red)
+                    Image(systemName: "ellipsis.circle").foregroundStyle(Color.nexoBrand)
                 }
             }
         }
@@ -418,10 +460,14 @@ struct HistorialView: View {
         var exitosos = 0
 
         for ficha in fichasACompartir {
-            // 1. Upload imagen si existe
             var imageUrl: String? = nil
             if let data = ficha.imageData, let userId = auth.currentUserId {
-                imageUrl = try? await StorageService.shared.uploadScanImage(data, userId: userId)
+                do {
+                    imageUrl = try await StorageService.shared.uploadScanImage(data, userId: userId)
+                    print("[NEXO] scan image uploaded ✓ url=\(imageUrl ?? "nil")")
+                } catch {
+                    print("[NEXO] scan image upload FAILED: \(error.localizedDescription)")
+                }
             }
 
             // 2. Guardar en scan_history
@@ -475,6 +521,7 @@ struct HistorialView: View {
         if exitosos > 0 {
             successCount = exitosos
             seleccionados.removeAll()
+            modoSeleccion = false
             withAnimation(.easeOut(duration: 0.2)) { showSuccess = true }
             Self.writeWidgetData(count: todas.count, co2: co2Total)
             WidgetKit.WidgetCenter.shared.reloadAllTimelines()
@@ -502,37 +549,51 @@ struct HistorialView: View {
     }
 }
 
+// MARK: - FichaWrapper
+
+struct FichaWrapper: Identifiable {
+    let ficha: FichaRegistro
+    let lista: [FichaRegistro]
+    var id: PersistentIdentifier { ficha.persistentModelID }
+}
+
+// MARK: - Thumbnail helper
+
+@ViewBuilder
+private func fichaThumbnail(_ ficha: FichaRegistro, fallbackDate: Bool = true) -> some View {
+    if let data = ficha.imageData, let uiImg = UIImage(data: data) {
+        Image(uiImage: uiImg)
+            .resizable().scaledToFill()
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+    } else if fallbackDate {
+        Text(ficha.fecha, style: .date)
+            .font(.system(size: 10, weight: .light))
+            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+    }
+}
+
 // MARK: - PendienteRow
 
 struct PendienteRow: View {
-    let ficha      : FichaRegistro
-    let isSelected : Bool
-    let onTap      : () -> Void
-    let onDelete   : () -> Void
+    let ficha         : FichaRegistro
+    let modoSeleccion : Bool
+    let isSelected    : Bool
+    let onTap         : () -> Void
+    let onDelete      : () -> Void
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Checkbox
-                ZStack {
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(
-                            isSelected ? Color.nexoBrand : Color(uiColor: .systemGray4),
-                            lineWidth: isSelected ? 1.5 : 0.5
-                        )
-                        .frame(width: 22, height: 22)
-                        .background(
-                            isSelected ? Color.nexoMint : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 5)
-                        )
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color.nexoBrand)
-                    }
+                if modoSeleccion {
+                    checkbox
+                        .transition(.asymmetric(
+                            insertion: .scale.combined(with: .opacity),
+                            removal:   .scale.combined(with: .opacity)
+                        ))
                 }
 
-                // Ícono
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.nexoMint)
@@ -542,7 +603,6 @@ struct PendienteRow: View {
                         .foregroundStyle(Color.nexoBrand)
                 }
 
-                // Info
                 VStack(alignment: .leading, spacing: 3) {
                     Text(ficha.displayName)
                         .font(.system(size: 14, weight: .semibold))
@@ -561,10 +621,7 @@ struct PendienteRow: View {
 
                 Spacer()
 
-                // Fecha
-                Text(ficha.fecha, style: .date)
-                    .font(.system(size: 10, weight: .light))
-                    .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                fichaThumbnail(ficha)
             }
             .padding(Sp.md)
             .background(
@@ -578,6 +635,7 @@ struct PendienteRow: View {
                         lineWidth: isSelected ? 1 : 0.5
                     )
             )
+            .animation(.easeOut(duration: 0.2), value: modoSeleccion)
             .animation(.easeOut(duration: 0.15), value: isSelected)
         }
         .buttonStyle(.plain)
@@ -587,50 +645,78 @@ struct PendienteRow: View {
             }
         }
     }
+
+    private var checkbox: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(
+                    isSelected ? Color.nexoBrand : Color(uiColor: .systemGray4),
+                    lineWidth: isSelected ? 1.5 : 0.5
+                )
+                .frame(width: 22, height: 22)
+                .background(
+                    isSelected ? Color.nexoMint : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 5)
+                )
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.nexoBrand)
+            }
+        }
+    }
 }
 
 // MARK: - ActivaRow
 
 struct ActivaRow: View {
     let ficha    : FichaRegistro
+    let onTap    : () -> Void
     let onRecoger: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.nexoGreen.opacity(0.12))
-                    .frame(width: 36, height: 36)
-                Image(systemName: ficha.icon)
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Color.nexoGreen)
-            }
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(ficha.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                HStack(spacing: 5) {
-                    Circle().fill(Color.nexoGreen).frame(width: 5, height: 5)
-                    Text("En el mapa")
-                        .font(.system(size: 11, weight: .medium))
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.nexoGreen.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: ficha.icon)
+                        .font(.system(size: 14, weight: .light))
                         .foregroundStyle(Color.nexoGreen)
-                    Text("·")
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                    Text(ficha.fecha, style: .date)
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
                 }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(ficha.displayName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(uiColor: .label))
+                    HStack(spacing: 5) {
+                        Circle().fill(Color.nexoGreen).frame(width: 5, height: 5)
+                        Text("En el mapa")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.nexoGreen)
+                        Text("·")
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                        Text(ficha.fecha, style: .date)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    }
+                }
+
+                Spacer()
+
+                fichaThumbnail(ficha, fallbackDate: false)
+
+                Text(ficha.value)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(hex: "7A5F00"))
             }
-
-            Spacer()
-
-            Text(ficha.value)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(hex: "7A5F00"))
+            .padding(Sp.md)
+            .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: Rd.lg))
+            .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+            .contentShape(Rectangle())
         }
-        .padding(Sp.md)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: Rd.lg))
-        .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button(action: onRecoger) {
                 Label("Recogida", systemImage: "checkmark.circle")
@@ -644,44 +730,49 @@ struct ActivaRow: View {
 
 struct RecogidaRow: View {
     let ficha: FichaRegistro
-    var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(uiColor: .systemGray5))
-                    .frame(width: 36, height: 36)
-                Image(systemName: ficha.icon)
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Color(uiColor: .secondaryLabel))
-            }
+    let onTap: () -> Void
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(ficha.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.nexoBrand)
-                    Text("Recogida")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.nexoBrand)
-                    Text("·")
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                    Text(ficha.co2)
-                        .font(.system(size: 11))
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(uiColor: .systemGray5))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: ficha.icon)
+                        .font(.system(size: 14, weight: .light))
                         .foregroundStyle(Color(uiColor: .secondaryLabel))
                 }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(ficha.displayName)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(uiColor: .label))
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color.nexoBrand)
+                        Text("Recogida")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.nexoBrand)
+                        Text("·")
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                        Text(ficha.co2)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    }
+                }
+
+                Spacer()
+
+                fichaThumbnail(ficha)
             }
-
-            Spacer()
-
-            Text(ficha.fecha, style: .date)
-                .font(.system(size: 10))
-                .foregroundStyle(Color(uiColor: .tertiaryLabel))
+            .padding(Sp.md)
+            .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: Rd.lg))
+            .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+            .contentShape(Rectangle())
         }
-        .padding(Sp.md)
-        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: Rd.lg))
-        .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color(uiColor: .separator), lineWidth: 0.5))
+        .buttonStyle(.plain)
     }
 }
 

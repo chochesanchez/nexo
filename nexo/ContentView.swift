@@ -336,9 +336,9 @@ struct ModoSelectorView: View {
             .padding(.horizontal, Sp.lg)
 
             VStack(spacing: 0) {
-                modoRow(mode: .hogar,      icon: "house",       desc: "Escanea, prepara y comparte residuos", isOn: appMode == .hogar)
+                modoRow(mode: .hogar,      icon: "house",       iconFilled: "house.fill", desc: "Escanea, prepara y comparte residuos", isOn: appMode == .hogar)
                 Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
-                modoRow(mode: .recolector, icon: "figure.walk", desc: "Encuentra materiales en tu ruta",      isOn: appMode == .recolector)
+                modoRow(mode: .recolector, icon: "figure.walk", iconFilled: nil,          desc: "Encuentra materiales en tu ruta",      isOn: appMode == .recolector)
                 Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
                 modoRowEmpresa(isOn: appMode == .empresa)
             }
@@ -378,13 +378,13 @@ struct ModoSelectorView: View {
 
     // MARK: - Rows de modo
 
-    private func modoRow(mode: AppMode, icon: String, desc: String, isOn: Bool) -> some View {
+    private func modoRow(mode: AppMode, icon: String, iconFilled: String? = nil, desc: String, isOn: Bool) -> some View {
         Button {
             saveMode(mode)
             withAnimation(.easeInOut(duration: 0.25)) { appMode = mode }
         } label: {
             HStack(spacing: Sp.md) {
-                Image(systemName: isOn ? icon + ".fill" : icon)
+                Image(systemName: isOn ? (iconFilled ?? icon) : icon)
                     .font(.system(size: 15, weight: .light))
                     .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
                     .frame(width: 24).animation(.easeOut(duration: 0.2), value: isOn)

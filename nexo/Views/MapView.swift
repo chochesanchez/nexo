@@ -110,7 +110,7 @@ struct MapView: View {
                         }
                     }
                 }
-                ForEach(CentroAcopio.cdmxAll) { centro in
+                ForEach(PuntoReciclaje.cdmxAll) { centro in
                     Annotation(centro.nombre, coordinate: centro.coordinate) {
                         PuntoReciclajePin(centro: centro)
                     }
