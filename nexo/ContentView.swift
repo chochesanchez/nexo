@@ -1,19 +1,16 @@
-//
-//  ContentView.swift
-//  nexo
-//
-//  Created by José Manuel Sánchez Pérez on 04/05/26.
-// ContentView.swift — Rediseño Bateman/Apple
-// ContentView.swift — Light mode, ModoSelectorView con cerrar sesión restaurado
 import SwiftUI
 import SwiftData
 import Combine
 
 struct ContentView: View {
-    @State private var selectedTab: Int = 0
+    @State private var selectedTab : Int     = 0
     @State private var appMode: AppMode = {
         let saved = UserDefaults.standard.string(forKey: "nexoRole")
-        return saved == "recolector" ? .recolector : .hogar
+        switch saved {
+        case "recolector": return .recolector
+        case "empresa":    return .empresa
+        default:           return .hogar
+        }
     }()
 
     @StateObject private var repo     = ListingsRepository()
@@ -21,8 +18,11 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if appMode == .hogar { hogarTabs }
-            else                 { recolectorTabs }
+            switch appMode {
+            case .hogar:      hogarTabs
+            case .recolector: recolectorTabs
+            case .empresa:    empresaTabs
+            }
         }
         .environmentObject(repo)
         .environmentObject(location)
@@ -37,6 +37,8 @@ struct ContentView: View {
             Button("OK") { repo.lastError = nil }
         } message: { Text(repo.lastError ?? "") }
     }
+
+    // MARK: - Tabs: Hogar
 
     private var hogarTabs: some View {
         TabView(selection: $selectedTab) {
@@ -55,8 +57,10 @@ struct ContentView: View {
 
             modoToggleTab
         }
-        .tint(Color.nexoBrand)
+        .tint(Color.nexoBlack)
     }
+
+    // MARK: - Tabs: Recolector
 
     private var recolectorTabs: some View {
         TabView(selection: $selectedTab) {
@@ -71,130 +75,179 @@ struct ContentView: View {
 
             modoToggleTab
         }
-        .tint(Color.nexoBrand)
+        .tint(Color.nexoAmber)
     }
     
 
+    // MARK: - Tabs: Empresa
+
+    private var empresaTabs: some View {
+        TabView(selection: $selectedTab) {
+            EmpresaView()
+                .tabItem { Label("Publicar lote", systemImage: "shippingbox") }
+                .tag(0)
+
+            MapView(listings: repo.listings.filter { isLoteListing($0) }, isLoading: repo.isLoading)
+                .tabItem { Label("Mis lotes", systemImage: "map") }
+                .tag(1)
+                .task { await repo.fetchAvailable() }
+
+            modoToggleTab
+        }
+        .tint(Color.nexoBlue)
+    }
+
+    // MARK: - Modo toggle tab
+
     private var modoToggleTab: some View {
         ModoSelectorView(appMode: $appMode)
-            .tabItem {
-                Label(
-                    appMode == .hogar ? "Ajustes" : "Ajustes",
-                    systemImage: "gearshape"
-                )
-            }
+            .tabItem { Label("Cambiar modo", systemImage: "arrow.2.squarepath") }
             .tag(99)
+    }
+
+    private func isLoteListing(_ listing: Listing) -> Bool {
+        listing.notes?.contains("Tipo:") ?? false
     }
 }
 
-// MARK: - ModoSelectorView — light mode Apple Settings style + cerrar sesión
+// MARK: - ModoSelectorView
+
 struct ModoSelectorView: View {
     @Binding var appMode: AppMode
-    @EnvironmentObject private var auth: AuthService
 
     var body: some View {
-        NavigationStack {
-            List {
-                // MARK: Modo actual
-                Section {
-                    modoRow(
-                        mode : .hogar,
-                        icon : "house.fill",
-                        color: Color.nexoBrand,
-                        desc : "Escaneo, fichas e historial de impacto"
-                    )
-                    modoRow(
-                        mode : .recolector,
-                        icon : "figure.walk",
-                        color: Color.nexoBrand,
-                        desc : "Mapa de fichas, voz y confirmación de recolección"
-                    )
-                } header: {
-                    Text("Modo de uso")
-                }
+        ZStack {
+            Color(uiColor: .systemBackground).ignoresSafeArea()
 
-                // MARK: Cuenta
-                Section {
-                    // Info de usuario si está disponible
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.nexoMint)
-                                .frame(width: 40, height: 40)
-                            Image(systemName: "person")
-                                .font(.system(size: 16, weight: .light))
-                                .foregroundStyle(Color.nexoBrand)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Mi cuenta")
-                                .font(.system(size: 15, weight: .medium))
-                            Text(auth.currentUserId != nil ? "Sesión activa" : "No has iniciado sesión")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color(uiColor: .secondaryLabel))
-                        }
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    Text("Cuenta")
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Modo")
+                        .font(.system(size: 10, weight: .semibold))
+                        .tracking(2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Color.nexoBrand.opacity(0.5))
+                    Text("¿Cómo usas\nNEXO ahora?")
+                        .font(.system(size: 32, weight: .bold))
+                        .tracking(-2)
+                        .foregroundStyle(Color.nexoForest)
+                        .lineSpacing(2)
                 }
+                .padding(.top, 48)
+                .padding(.horizontal, Sp.lg)
+                .padding(.bottom, 32)
 
-                // MARK: Cerrar sesión — restaurado
-                Section {
-                    Button(role: .destructive) {
-                        Task { await auth.signOut() }
-                    } label: {
-                        HStack {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .frame(width: 20)
-                            Text("Cerrar sesión")
-                        }
-                        .font(.system(size: 15, weight: .regular))
-                    }
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("NEXO")
-            .navigationBarTitleDisplayMode(.large)
-            .tint(Color.nexoBrand)
-        }
-    }
+                Rectangle()
+                    .fill(Color.nexoForest.opacity(0.07))
+                    .frame(height: 0.5)
 
-    private func modoRow(mode: AppMode, icon: String, color: Color, desc: String) -> some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.2)) { appMode = mode }
-            UserDefaults.standard.set(mode == .hogar ? "hogar" : "recolector", forKey: "nexoRole")
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(appMode == mode ? Color.nexoMint : Color(uiColor: .systemGray6))
-                        .frame(width: 32, height: 32)
-                    Image(systemName: icon)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(appMode == mode ? Color.nexoBrand : Color(uiColor: .secondaryLabel))
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(mode.rawValue)
-                        .font(.system(size: 15, weight: appMode == mode ? .semibold : .regular))
-                        .foregroundStyle(Color(uiColor: .label))
-                    Text(desc)
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                VStack(spacing: 0) {
+                    modoRow(mode: .hogar,      icon: "house",      desc: "Escanea, prepara y comparte residuos",          isOn: appMode == .hogar)
+                    Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
+                    modoRow(mode: .recolector, icon: "figure.walk", desc: "Encuentra materiales en tu ruta",              isOn: appMode == .recolector)
+                    Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
+                    modoRowEmpresa(isOn: appMode == .empresa)
+                    Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
                 }
 
                 Spacer()
 
-                if appMode == mode {
+                Text("El cambio aplica inmediatamente.")
+                    .font(.system(size: 11, weight: .light))
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .padding(.horizontal, Sp.lg)
+                    .padding(.bottom, 32)
+            }
+        }
+    }
+
+    private func modoRow(mode: AppMode, icon: String, desc: String, isOn: Bool) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) { appMode = mode }
+            saveMode(mode)
+        } label: {
+            HStack(spacing: Sp.md) {
+                Image(systemName: isOn ? icon + ".fill" : icon)
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(mode.rawValue)
+                        .font(.system(size: 16, weight: isOn ? .semibold : .regular))
+                        .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .secondaryLabel))
+                    Text(desc)
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                }
+
+                Spacer()
+
+                if isOn {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.nexoBrand)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.nexoForest)
                 }
             }
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
+            .padding(.horizontal, Sp.lg)
+            .padding(.vertical, 18)
+            .background(isOn ? Color.nexoForest.opacity(0.04) : Color.clear)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Cambiar a \(mode.rawValue)")
+    }
+
+    private func modoRowEmpresa(isOn: Bool) -> some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) { appMode = .empresa }
+            saveMode(.empresa)
+        } label: {
+            HStack(spacing: Sp.md) {
+                Image(systemName: isOn ? "building.2.fill" : "building.2")
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
+                    .frame(width: 24)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 8) {
+                        Text("Empresa")
+                            .font(.system(size: 16, weight: isOn ? .semibold : .regular))
+                            .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .secondaryLabel))
+
+                        Text("2.5× impacto")
+                            .font(.system(size: 9, weight: .bold))
+                            .tracking(0.3)
+                            .foregroundStyle(Color.nexoBrand)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.nexoBrand.opacity(0.1), in: RoundedRectangle(cornerRadius: 4))
+                    }
+                    Text("Publica lotes para gestores certificados")
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                }
+
+                Spacer()
+
+                if isOn {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.nexoForest)
+                }
+            }
+            .padding(.horizontal, Sp.lg)
+            .padding(.vertical, 18)
+            .background(isOn ? Color.nexoForest.opacity(0.04) : Color.clear)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Cambiar a Modo Empresa")
+    }
+
+    private func saveMode(_ mode: AppMode) {
+        switch mode {
+        case .hogar:      UserDefaults.standard.set("hogar",      forKey: "nexoRole")
+        case .recolector: UserDefaults.standard.set("recolector", forKey: "nexoRole")
+        case .empresa:    UserDefaults.standard.set("empresa",    forKey: "nexoRole")
+        }
     }
 }
 

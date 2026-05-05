@@ -1,4 +1,3 @@
-// ExplainView.swift — Light mode, liquid glass cards
 import SwiftUI
 
 struct ExplainView: View {
@@ -10,185 +9,207 @@ struct ExplainView: View {
         ZStack {
             Color(uiColor: .systemBackground).ignoresSafeArea()
 
-            // Gradiente de fondo sutil
             VStack {
                 LinearGradient(
-                    colors: [Color.nexoMint.opacity(0.5), Color.clear],
-                    startPoint: .top, endPoint: .bottom
-                ).frame(height: 280)
+                    colors: [Color.nexoMint.opacity(0.6), Color.clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 320)
                 Spacer()
-            }.ignoresSafeArea()
+            }
+            .ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
+                Spacer()
 
-                // Header
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("¿Cómo usas NEXO?")
-                        .font(.system(size: 34, weight: .bold))
-                        .tracking(-1.5)
-                        .foregroundStyle(Color(uiColor: .label))
+                Text("Elige tu modo")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(2)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.nexoBrand.opacity(0.5))
+                    .padding(.bottom, 16)
+                    .opacity(contentIn ? 1 : 0)
 
-                    Text("Esto define tu pantalla principal.\nPuedes cambiarlo en cualquier momento.")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(Color(uiColor: .secondaryLabel))
-                        .lineSpacing(3)
-                }
-                .padding(.top, 72)
-                .padding(.horizontal, Sp.lg)
-                .padding(.bottom, 32)
+                Text("¿Cómo usas\nNEXO?")
+                    .font(.system(size: 48, weight: .bold))
+                    .tracking(-3)
+                    .foregroundStyle(Color.nexoForest)
+                    .opacity(contentIn ? 1 : 0)
+                    .offset(y: contentIn ? 0 : 10)
 
-                // Regla
                 Rectangle()
-                    .fill(Color.nexoForest.opacity(0.07))
+                    .fill(Color.nexoForest.opacity(0.1))
                     .frame(height: 0.5)
-                    .padding(.horizontal, Sp.lg)
-                    .padding(.bottom, 28)
+                    .padding(.vertical, 20)
+                    .opacity(contentIn ? 1 : 0)
 
-                // Tarjetas
-                VStack(spacing: 12) {
-                    RoleCard(
-                        icon      : "house",
-                        title     : "Hogar, escuela o negocio",
-                        subtitle  : "Identifico residuos y los preparo para recolección.",
-                        isSelected: selectedRole == .hogar
-                    ) { withAnimation(.easeOut(duration: 0.2)) { selectedRole = .hogar } }
-
-                    RoleCard(
-                        icon      : "figure.walk",
-                        title     : "Soy recolector",
-                        subtitle  : "Busco materiales preparados cerca de mi ruta.",
-                        isSelected: selectedRole == .recolector
-                    ) { withAnimation(.easeOut(duration: 0.2)) { selectedRole = .recolector } }
-                }
-                .padding(.horizontal, Sp.lg)
-                .opacity(contentIn ? 1 : 0)
-                .offset(y: contentIn ? 0 : 12)
+                Text("Esto determina tu pantalla principal.\nPuedes cambiarlo después.")
+                    .font(.system(size: 15, weight: .light))
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .lineSpacing(4)
+                    .opacity(contentIn ? 1 : 0)
+                    .offset(y: contentIn ? 0 : 8)
 
                 Spacer()
 
-                // CTA
-                NavigationLink(destination: SignUpView()) {
-                    Group {
-                        if selectedRole == nil {
-                            Text("Selecciona un modo")
-                                .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                        } else {
-                            Text("Continuar")
-                                .foregroundStyle(.white)
-                        }
+                VStack(spacing: 10) {
+                    RoleCard(
+                        icon:         "house",
+                        iconSelected: "house.fill",
+                        title:        "Hogar, escuela o negocio",
+                        description:  "Identifico residuos y los preparo para recolección.",
+                        isSelected:   selectedRole == .hogar
+                    ) {
+                        withAnimation(.easeOut(duration: 0.2)) { selectedRole = .hogar }
                     }
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(
-                        selectedRole == nil
-                            ? Color(uiColor: .systemGray5)
-                            : Color.nexoForest,
-                        in: RoundedRectangle(cornerRadius: Rd.lg)
-                    )
-                    .animation(.easeOut(duration: 0.25), value: selectedRole)
+
+                    RoleCard(
+                        icon:         "figure.walk",
+                        iconSelected: "figure.walk",        // sin .fill — no existe en SF Symbols
+                        title:        "Soy recolector",
+                        description:  "Busco materiales preparados cerca de mi ruta.",
+                        isSelected:   selectedRole == .recolector
+                    ) {
+                        withAnimation(.easeOut(duration: 0.2)) { selectedRole = .recolector }
+                    }
+
+                    RoleCard(
+                        icon:         "building.2",
+                        iconSelected: "building.2.fill",
+                        title:        "Empresa o comercio",
+                        description:  "Publico lotes de residuos para gestores certificados.",
+                        isSelected:   selectedRole == .empresa
+                    ) {
+                        withAnimation(.easeOut(duration: 0.2)) { selectedRole = .empresa }
+                    }
                 }
-                .disabled(selectedRole == nil)
-                .padding(.horizontal, Sp.lg)
-                .padding(.bottom, 48)
-                .simultaneousGesture(TapGesture().onEnded {
-                    if let role = selectedRole {
-                        UserDefaults.standard.set(role == .hogar ? "hogar" : "recolector", forKey: "nexoRole")
+                .opacity(contentIn ? 1 : 0)
+                .offset(y: contentIn ? 0 : 14)
+
+
+                Spacer()
+
+                VStack(spacing: 10) {
+                    NavigationLink(destination: SignUpView()) {
+                        Text(selectedRole == nil ? "Selecciona un modo" : "Continuar")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(selectedRole == nil ? Color(uiColor: .tertiaryLabel) : .white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                selectedRole == nil
+                                    ? Color(uiColor: .secondarySystemBackground)
+                                    : Color.nexoForest,
+                                in: RoundedRectangle(cornerRadius: Rd.lg)
+                            )
+                            .animation(.easeOut(duration: 0.25), value: selectedRole == nil)
                     }
-                })
+                    .disabled(selectedRole == nil)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        guard let role = selectedRole else { return }
+                        switch role {
+                        case .hogar:      UserDefaults.standard.set("hogar",      forKey: "nexoRole")
+                        case .recolector: UserDefaults.standard.set("recolector", forKey: "nexoRole")
+                        case .empresa:    UserDefaults.standard.set("empresa",    forKey: "nexoRole")
+                        }
+                    })
+                }
+                .opacity(contentIn ? 1 : 0)
+                .offset(y: contentIn ? 0 : 14)
+                .padding(.bottom, 48)
             }
+            .padding(.horizontal, Sp.lg)
         }
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.nexoBrand)
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Regresar")
+                            .font(.system(size: 15, weight: .regular))
+                    }
+                    .foregroundStyle(Color.nexoForest)
                 }
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4).delay(0.1)) { contentIn = true }
+            withAnimation(.easeOut(duration: 0.55).delay(0.1)) { contentIn = true }
         }
     }
 }
 
-// MARK: - RoleCard — liquid glass light mode
+// MARK: - RoleCard
+
 struct RoleCard: View {
-    let icon      : String
-    let title     : String
-    let subtitle  : String
-    let isSelected: Bool
-    let onTap     : () -> Void
+    let icon        : String
+    let iconSelected: String   
+    let title       : String
+    let description : String
+    let isSelected  : Bool
+    let onTap       : () -> Void
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 14) {
-                // Ícono en círculo
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.nexoMint : Color(uiColor: .systemGray6))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: isSelected ? "\(icon).fill" : icon)
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundStyle(isSelected ? Color.nexoBrand : Color(uiColor: .secondaryLabel))
-                }
+            HStack(spacing: Sp.md) {
+                Image(systemName: isSelected ? iconSelected : icon)
+                    .font(.system(size: 16, weight: isSelected ? .regular : .light))
+                    .foregroundStyle(isSelected ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
+                    .frame(width: 28)
+                    .animation(.easeOut(duration: 0.2), value: isSelected)
 
-                // Texto
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color(uiColor: .label))
-                    Text(subtitle)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                        .font(.system(size: 15, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isSelected ? Color.nexoForest : Color(uiColor: .secondaryLabel))
+                    Text(description)
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
 
-                // Indicador
+                // Radio button
                 ZStack {
                     Circle()
                         .strokeBorder(
-                            isSelected ? Color.nexoBrand : Color(uiColor: .systemGray4),
+                            isSelected ? Color.nexoForest : Color(uiColor: .separator),
                             lineWidth: isSelected ? 1.5 : 0.5
                         )
                         .frame(width: 20, height: 20)
                     if isSelected {
                         Circle()
-                            .fill(Color.nexoBrand)
+                            .fill(Color.nexoForest)
                             .frame(width: 10, height: 10)
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
+                .animation(.easeOut(duration: 0.2), value: isSelected)
             }
             .padding(Sp.md)
-            .background(
-                isSelected
-                    ? Color.nexoMint.opacity(0.5)
-                    : Color(uiColor: .systemBackground),
-                in: RoundedRectangle(cornerRadius: Rd.lg)
-            )
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Rd.md))
             .overlay(
-                RoundedRectangle(cornerRadius: Rd.lg)
+                RoundedRectangle(cornerRadius: Rd.md)
                     .strokeBorder(
-                        isSelected ? Color.nexoBrand.opacity(0.4) : Color(uiColor: .separator),
+                        isSelected ? Color.nexoForest.opacity(0.3) : Color.nexoForest.opacity(0.07),
                         lineWidth: isSelected ? 1 : 0.5
                     )
             )
-            // Liquid glass shadow sutil cuando está seleccionada
-            .shadow(
-                color: isSelected ? Color.nexoForest.opacity(0.08) : .clear,
-                radius: 8, x: 0, y: 3
-            )
+            .animation(.easeOut(duration: 0.2), value: isSelected)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isSelected)
+        .accessibilityLabel(title)
     }
 }
 
-enum AppRole { case hogar, recolector }
+enum AppRole {
+    case hogar
+    case recolector
+    case empresa
+}
 
 #Preview {
     NavigationStack { ExplainView() }

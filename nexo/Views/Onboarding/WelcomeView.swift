@@ -4,7 +4,7 @@
 //
 //  Created by Grecia Saucedo on 04/05/26.
 //
-// WelcomeView.swift — Light mode, verde corporativo, liquid glass
+
 import SwiftUI
 
 struct WelcomeView: View {
@@ -38,7 +38,7 @@ struct WelcomeView: View {
                         .foregroundStyle(Color.nexoBrand.opacity(0.5))
                         .padding(.bottom, 16)
 
-                    // Logo — verde corporativo, no negro
+                    // Logo
                     Text("NEXO")
                         .font(.system(size: 72, weight: .bold))
                         .tracking(-4)

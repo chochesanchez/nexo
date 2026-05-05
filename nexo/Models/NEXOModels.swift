@@ -7,6 +7,7 @@ import SwiftUI
 enum AppMode: String, CaseIterable {
     case hogar      = "Hogar"
     case recolector = "Recolector"
+    case empresa    = "Empresa"
 }
 
 // MARK: - Material Route
