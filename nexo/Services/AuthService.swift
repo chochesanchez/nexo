@@ -31,26 +31,30 @@ final class AuthService: ObservableObject {
     func signUp(nombre: String, apellido: String, email: String, telefono: String, edad: Int, password: String, avatarData: Data? = nil) async {
         errorMessage = nil
         do {
-            let response = try await client.auth.signUp(email: email, password: password)
+            let response = try await client.auth.signUp(
+                email: email,
+                password: password,
+                data: [
+                    "nombre"   : .string(nombre),
+                    "apellido" : .string(apellido),
+                    "telefono" : .string(telefono),
+                    "edad"     : .integer(edad)
+                ]
+            )
             let user = response.user
             currentUserId = user.id
 
-            var uploadedAvatarUrl: String? = nil
             if let data = avatarData {
-                uploadedAvatarUrl = try? await StorageService.shared.uploadAvatar(data, userId: user.id)
+                if let uploaded = try? await StorageService.shared.uploadAvatar(data, userId: user.id) {
+                    _ = try? await client
+                        .from("profiles")
+                        .update(["avatar_url": uploaded])
+                        .eq("user_id", value: user.id.uuidString)
+                        .execute()
+                    avatarURL = uploaded
+                }
             }
 
-            let profile = NewProfile(
-                userId   : user.id,
-                nombre   : nombre,
-                apellido : apellido,
-                telefono : telefono,
-                correo   : email,
-                edad     : edad,
-                avatarUrl: uploadedAvatarUrl
-            )
-            try await client.from("profiles").insert(profile).execute()
-            avatarURL = uploadedAvatarUrl
             isAuthenticated = response.session != nil
         } catch {
             errorMessage = "Error al registrarse. Intenta con otro correo."
