@@ -30,6 +30,7 @@ struct FichaView: View {
     let material  : NEXOMaterial
     let ocrText   : String?
     var imageData : Data? = nil
+    var remoteImageURL: String? = nil
     @Binding var isPresented: Bool
 
     @Environment(\.modelContext)    private var context
@@ -53,6 +54,7 @@ struct FichaView: View {
                 header
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 0) {
+                        scanImageCard
                         routeBadgeRow
                         instructionsCard
                         if let tip = material.smellTip { smellCard(tip) }
@@ -124,6 +126,44 @@ struct FichaView: View {
     }
 
     // MARK: - Sections
+    @ViewBuilder
+    private var scanImageCard: some View {
+        if let data = imageData, let ui = UIImage(data: data) {
+            Image(uiImage: ui)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 220)
+                .clipped()
+                .background(Color(uiColor: .systemBackground))
+                .accessibilityLabel("Foto del residuo escaneado")
+        } else if let urlStr = remoteImageURL, let url = URL(string: urlStr) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let img):
+                    img.resizable().scaledToFill()
+                        .frame(maxWidth: .infinity).frame(height: 220).clipped()
+                case .failure:
+                    Rectangle().fill(Color(uiColor: .systemGray6))
+                        .frame(maxWidth: .infinity).frame(height: 220)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 24))
+                                .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                        )
+                default:
+                    Rectangle().fill(Color(uiColor: .systemGray6))
+                        .frame(maxWidth: .infinity).frame(height: 220)
+                        .overlay(ProgressView().tint(Color.nexoBrand))
+                }
+            }
+            .background(Color(uiColor: .systemBackground))
+            .accessibilityLabel("Foto del residuo escaneado")
+        } else {
+            EmptyView()
+        }
+    }
+
     private var routeBadgeRow: some View {
         HStack(spacing: 8) {
             Image(systemName: material.route.icon).font(.system(size: 12, weight: .semibold))

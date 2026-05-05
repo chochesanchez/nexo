@@ -128,3 +128,28 @@ struct NewScanRecord: Encodable {
         case fmInstruction = "fm_instruction"
     }
 }
+
+struct CentroAcopio: Codable, Identifiable, Hashable {
+    let id: String
+    let nombre: String
+    let tipo: String
+    let direccion: String
+    let alcaldia: String?
+    let codigoPostal: String?
+    let telefono: String?
+    let email: String?
+    let materiales: [String]
+    let lat: Double
+    let lng: Double
+    let horario: String?
+    let fuente: String?
+    let notas: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, nombre, tipo, direccion, alcaldia
+        case codigoPostal = "codigo_postal"
+        case telefono, email, materiales
+        case lat, lng
+        case horario, fuente, notas
+    }
+}

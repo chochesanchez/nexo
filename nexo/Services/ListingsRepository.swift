@@ -5,8 +5,9 @@ import Supabase
 @MainActor
 final class ListingsRepository: ObservableObject {
 
-    @Published var listings  : [Listing]    = []
-    @Published var history   : [ScanRecord] = []
+    @Published var listings  : [Listing]      = []
+    @Published var history   : [ScanRecord]   = []
+    @Published var centros   : [CentroAcopio] = []
     @Published var isLoading = false
     @Published var lastError : String?
 
@@ -81,6 +82,18 @@ final class ListingsRepository: ObservableObject {
                 .execute()
         } catch {
             print("[Supabase] insertScanRecord error:", error)
+        }
+    }
+
+    func fetchCentros() async {
+        do {
+            centros = try await client
+                .from("centros_reciclaje")
+                .select()
+                .execute()
+                .value
+        } catch {
+            print("[Supabase] fetchCentros error:", error)
         }
     }
 }

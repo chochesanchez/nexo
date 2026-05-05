@@ -17,6 +17,7 @@ struct SignUpView: View {
 
     @State private var avatarItem: PhotosPickerItem? = nil
     @State private var avatarData: Data?             = nil
+    @State private var showSuccessToast              = false
 
     var body: some View {
         ZStack {
@@ -170,6 +171,33 @@ struct SignUpView: View {
                             .font(.system(size: 16, weight: .regular))
                     }
                     .foregroundStyle(Color.nexoBrand)
+                }
+            }
+        }
+        .overlay(alignment: .top) {
+            if showSuccessToast {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.white)
+                    Text("Cuenta creada. Ahora inicia sesión.")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.nexoForest, in: Capsule())
+                .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
+                .padding(.top, 60)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .onChange(of: auth.signupCompleted) { _, completed in
+            if completed {
+                withAnimation(.spring(response: 0.4)) { showSuccessToast = true }
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_400_000_000)
+                    auth.signupCompleted = false
+                    dismiss()
                 }
             }
         }

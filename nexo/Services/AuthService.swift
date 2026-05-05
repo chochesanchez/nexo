@@ -42,6 +42,7 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
     @Published var currentUserId: UUID?
     @Published var avatarURL: String?
+    @Published var signupCompleted = false
 
     private let client = SupabaseClientProvider.shared.client
 
@@ -67,9 +68,19 @@ final class AuthService: ObservableObject {
     func signUp(nombre: String, apellido: String, email: String, telefono: String, edad: Int, password: String, avatarData: Data? = nil) async {
         errorMessage = nil
         do {
+            struct EmailCheckParams: Encodable { let p_email: String }
+            let alreadyExists: Bool = (try? await client
+                .rpc("email_in_profiles", params: EmailCheckParams(p_email: email))
+                .execute()
+                .value) ?? false
+
+            if alreadyExists {
+                errorMessage = "Esta cuenta ya existe. Inicia sesión."
+                return
+            }
+
             let response = try await client.auth.signUp(email: email, password: password)
             let user = response.user
-            currentUserId = user.id
 
             guard response.session != nil else {
                 errorMessage = "Email confirmation debe estar OFF en Supabase."
@@ -94,10 +105,24 @@ final class AuthService: ObservableObject {
                 .rpc("upsert_my_profile", params: params)
                 .execute()
 
-            avatarURL = uploadedAvatarUrl
-            isAuthenticated = true
+            try? await client.auth.signOut()
+            isAuthenticated = false
+            currentUserId = nil
+            avatarURL = nil
+            signupCompleted = true
         } catch {
-            errorMessage = "Error: \(error.localizedDescription)"
+            let desc = error.localizedDescription.lowercased()
+            if desc.contains("already registered") || desc.contains("user_already_exists") {
+                errorMessage = "Esta cuenta ya existe. Inicia sesión."
+            } else if desc.contains("weak_password") {
+                errorMessage = "Contraseña muy débil. Usa al menos 8 caracteres."
+            } else if desc.contains("missing email") || desc.contains("validation_failed") {
+                errorMessage = "Completa correo y contraseña."
+            } else if desc.contains("rate") || desc.contains("limit") {
+                errorMessage = "Demasiados intentos. Espera unos minutos."
+            } else {
+                errorMessage = "Error al registrarse: \(error.localizedDescription)"
+            }
             print("[Auth] signUp:", error)
         }
     }
@@ -114,10 +139,15 @@ final class AuthService: ObservableObject {
     }
 
     func loadSession() async {
-        isAuthenticated = client.auth.currentSession != nil
-        if isAuthenticated {
+        if let session = client.auth.currentSession, !session.isExpired {
+            isAuthenticated = true
             currentUserId = client.auth.currentUser?.id
             await fetchProfile()
+        } else {
+            isAuthenticated = false
+            currentUserId = nil
+            avatarURL = nil
+            try? await client.auth.signOut()
         }
     }
 
@@ -128,14 +158,14 @@ final class AuthService: ObservableObject {
             enum CodingKeys: String, CodingKey { case avatarUrl = "avatar_url" }
         }
         do {
-            let p: P = try await client
+            let rows: [P] = try await client
                 .from("profiles")
                 .select("avatar_url")
                 .eq("user_id", value: id.uuidString)
-                .single()
+                .limit(1)
                 .execute()
                 .value
-            avatarURL = p.avatarUrl
+            avatarURL = rows.first?.avatarUrl
         } catch {
             print("[Auth] fetchProfile:", error)
         }
