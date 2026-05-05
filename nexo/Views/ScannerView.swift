@@ -1,4 +1,3 @@
-// ScannerView.swift
 import SwiftUI
 import AVFoundation
 
@@ -32,7 +31,7 @@ struct ScannerView: View {
         }
         .onAppear  { camera.start() }
         .onDisappear { camera.stop() }
-        .onChange(of: camera.detectedMaterial) { mat in if mat != nil { showFicha = true } }
+        .onChange(of: camera.detectedMaterial) { _, mat in if mat != nil { showFicha = true } }
         .fullScreenCover(isPresented: $showFicha) {
             if let mat = camera.detectedMaterial {
                 FichaView(material: mat, isPresented: $showFicha)

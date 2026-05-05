@@ -1,6 +1,3 @@
-// MapView.swift
-// Acepta listings reales de Supabase. Si no hay, muestra datos mock.
-
 import SwiftUI
 import MapKit
 
@@ -30,9 +27,11 @@ struct MapView: View {
     var listings   : [Listing] = []
     var isLoading  : Bool      = false
 
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332),
-        span:   MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
+    @State private var position: MapCameraPosition = .region(
+        MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332),
+            span:   MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
+        )
     )
     @State private var selectedPin: FichaPin? = nil
     @State private var showFicha  = false
@@ -47,12 +46,15 @@ struct MapView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            Map(coordinateRegion: $region, showsUserLocation: true, annotationItems: pins) { pin in
-                MapAnnotation(coordinate: pin.coordinate) {
-                    PinView(material: pin.material) {
-                        selectedPin = pin; showFicha = true
+            Map(position: $position) {
+                ForEach(pins) { pin in
+                    Annotation(pin.material.displayName, coordinate: pin.coordinate) {
+                        PinView(material: pin.material) {
+                            selectedPin = pin; showFicha = true
+                        }
                     }
                 }
+                UserAnnotation()
             }
             .ignoresSafeArea()
             topBar
