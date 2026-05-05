@@ -8,7 +8,7 @@ xcuserdata/
 .swiftpm/
 .build/
 
-# Supabase local config — NUNCA commitear
+# Supabase local config
 nexo/SupabaseConfig.swift
 nexo/Config/SupabaseConfig.swift
 .env
