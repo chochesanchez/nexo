@@ -7,17 +7,65 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4E86794A2FA9A0DC006AC961 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E8679492FA9A0DC006AC961 /* WidgetKit.framework */; };
+		4E86794C2FA9A0DC006AC961 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E86794B2FA9A0DC006AC961 /* SwiftUI.framework */; };
+		4E8679592FA9A0DD006AC961 /* NEXOWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4E8679482FA9A0DC006AC961 /* NEXOWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E553B6612FA993D1008E34B5 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = E553B6602FA993D1008E34B5 /* Auth */; };
 		E553B6632FA993D1008E34B5 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = E553B6622FA993D1008E34B5 /* PostgREST */; };
 		E553B6652FA993D1008E34B5 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = E553B6642FA993D1008E34B5 /* Realtime */; };
 		E553B6772FA9967B008E34B5 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = E553B6762FA9967B008E34B5 /* Supabase */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		4E8679572FA9A0DD006AC961 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E57595A72FA94FC20014E526 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4E8679472FA9A0DC006AC961;
+			remoteInfo = NEXOWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4E86795E2FA9A0DD006AC961 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4E8679592FA9A0DD006AC961 /* NEXOWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		4E8679482FA9A0DC006AC961 /* NEXOWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NEXOWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E8679492FA9A0DC006AC961 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		4E86794B2FA9A0DC006AC961 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		E57595AF2FA94FC20014E526 /* nexo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nexo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4E86795A2FA9A0DD006AC961 /* Exceptions for "NEXOWidget" folder in "NEXOWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4E8679472FA9A0DC006AC961 /* NEXOWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		4E86794D2FA9A0DC006AC961 /* NEXOWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4E86795A2FA9A0DD006AC961 /* Exceptions for "NEXOWidget" folder in "NEXOWidgetExtension" target */,
+			);
+			path = NEXOWidget;
+			sourceTree = "<group>";
+		};
 		E57595B12FA94FC20014E526 /* nexo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = nexo;
@@ -26,6 +74,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4E8679452FA9A0DC006AC961 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4E86794C2FA9A0DC006AC961 /* SwiftUI.framework in Frameworks */,
+				4E86794A2FA9A0DC006AC961 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E57595AC2FA94FC20014E526 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -43,6 +100,8 @@
 		E553B6752FA9967B008E34B5 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				4E8679492FA9A0DC006AC961 /* WidgetKit.framework */,
+				4E86794B2FA9A0DC006AC961 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -51,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				E57595B12FA94FC20014E526 /* nexo */,
+				4E86794D2FA9A0DC006AC961 /* NEXOWidget */,
 				E553B6752FA9967B008E34B5 /* Frameworks */,
 				E57595B02FA94FC20014E526 /* Products */,
 			);
@@ -60,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				E57595AF2FA94FC20014E526 /* nexo.app */,
+				4E8679482FA9A0DC006AC961 /* NEXOWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,6 +128,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4E8679472FA9A0DC006AC961 /* NEXOWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4E86795B2FA9A0DD006AC961 /* Build configuration list for PBXNativeTarget "NEXOWidgetExtension" */;
+			buildPhases = (
+				4E8679442FA9A0DC006AC961 /* Sources */,
+				4E8679452FA9A0DC006AC961 /* Frameworks */,
+				4E8679462FA9A0DC006AC961 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4E86794D2FA9A0DC006AC961 /* NEXOWidget */,
+			);
+			name = NEXOWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = NEXOWidgetExtension;
+			productReference = 4E8679482FA9A0DC006AC961 /* NEXOWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		E57595AE2FA94FC20014E526 /* nexo */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E57595BA2FA94FC30014E526 /* Build configuration list for PBXNativeTarget "nexo" */;
@@ -74,10 +157,12 @@
 				E57595AB2FA94FC20014E526 /* Sources */,
 				E57595AC2FA94FC20014E526 /* Frameworks */,
 				E57595AD2FA94FC20014E526 /* Resources */,
+				4E86795E2FA9A0DD006AC961 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				4E8679582FA9A0DD006AC961 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E57595B12FA94FC20014E526 /* nexo */,
@@ -100,9 +185,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					4E8679472FA9A0DC006AC961 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
 					E57595AE2FA94FC20014E526 = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -126,11 +214,19 @@
 			projectRoot = "";
 			targets = (
 				E57595AE2FA94FC20014E526 /* nexo */,
+				4E8679472FA9A0DC006AC961 /* NEXOWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4E8679462FA9A0DC006AC961 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E57595AD2FA94FC20014E526 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -141,6 +237,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4E8679442FA9A0DC006AC961 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E57595AB2FA94FC20014E526 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -150,7 +253,77 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		4E8679582FA9A0DD006AC961 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4E8679472FA9A0DC006AC961 /* NEXOWidgetExtension */;
+			targetProxy = 4E8679572FA9A0DD006AC961 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		4E86795C2FA9A0DD006AC961 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLE629MGG8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NEXOWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NEXOWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chochesanchez.nexo.NEXOWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4E86795D2FA9A0DD006AC961 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CLE629MGG8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NEXOWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NEXOWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.chochesanchez.nexo.NEXOWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		E57595B82FA94FC30014E526 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -339,6 +512,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4E86795B2FA9A0DD006AC961 /* Build configuration list for PBXNativeTarget "NEXOWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4E86795C2FA9A0DD006AC961 /* Debug */,
+				4E86795D2FA9A0DD006AC961 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E57595AA2FA94FC20014E526 /* Build configuration list for PBXProject "nexo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
