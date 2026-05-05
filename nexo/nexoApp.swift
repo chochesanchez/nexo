@@ -29,8 +29,6 @@ struct RootView: View {
                 WelcomeView()
             }
         }
-        .task {
-            await auth.loadSession()
-        }
+        .task { await auth.loadSession() }
     }
 }
