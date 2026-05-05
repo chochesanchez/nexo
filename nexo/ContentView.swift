@@ -1,9 +1,10 @@
+// ContentView.swift — Modo Empresa con tab de Historial
+
 import SwiftUI
 import SwiftData
-import Combine
 
 struct ContentView: View {
-    @State private var selectedTab : Int     = 0
+    @State private var selectedTab : Int = 0
     @State private var appMode: AppMode = {
         let saved = UserDefaults.standard.string(forKey: "nexoRole")
         switch saved {
@@ -17,84 +18,79 @@ struct ContentView: View {
     @StateObject private var location = LocationManager.shared
 
     var body: some View {
-        Group {
+        ZStack {
             switch appMode {
-            case .hogar:      hogarTabs
-            case .recolector: recolectorTabs
-            case .empresa:    empresaTabs
+            case .hogar:      hogarTabs.transition(.opacity)
+            case .recolector: recolectorTabs.transition(.opacity)
+            case .empresa:    empresaTabs.transition(.opacity)
             }
         }
         .environmentObject(repo)
         .environmentObject(location)
         .onAppear { location.startUpdating() }
         .onReceive(NotificationCenter.default.publisher(for: .nexoOpenScanner)) { _ in
-            appMode = .hogar; withAnimation { selectedTab = 0 }
+            withAnimation(.easeInOut(duration: 0.25)) { appMode = .hogar; selectedTab = 0 }
         }
         .onReceive(NotificationCenter.default.publisher(for: .nexoOpenHistorial)) { _ in
-            appMode = .hogar; withAnimation { selectedTab = 2 }
+            withAnimation(.easeInOut(duration: 0.25)) { appMode = .hogar; selectedTab = 2 }
         }
         .alert("Error", isPresented: .constant(repo.lastError != nil)) {
             Button("OK") { repo.lastError = nil }
         } message: { Text(repo.lastError ?? "") }
     }
 
-    // MARK: - Tabs: Hogar
+    // MARK: - Hogar
 
     private var hogarTabs: some View {
         TabView(selection: $selectedTab) {
             ScannerView(appMode: $appMode)
-                .tabItem { Label("Escanear", systemImage: "viewfinder") }
-                .tag(0)
+                .tabItem { Label("Escanear", systemImage: "viewfinder") }.tag(0)
 
             MapView(listings: repo.listings, isLoading: repo.isLoading)
-                .tabItem { Label("Mapa", systemImage: "map") }
-                .tag(1)
+                .tabItem { Label("Mapa", systemImage: "map") }.tag(1)
                 .task { await repo.fetchAvailable() }
 
             HistorialView()
-                .tabItem { Label("Historial", systemImage: "clock") }
-                .tag(2)
+                .tabItem { Label("Historial", systemImage: "clock") }.tag(2)
 
             modoToggleTab
         }
         .tint(Color.nexoBlack)
     }
 
-    // MARK: - Tabs: Recolector
+    // MARK: - Recolector
 
     private var recolectorTabs: some View {
         TabView(selection: $selectedTab) {
             RecolectorView(listings: repo.listings, isLoading: repo.isLoading)
-                .tabItem { Label("Fichas", systemImage: "map") }
-                .tag(0)
+                .tabItem { Label("Fichas", systemImage: "map") }.tag(0)
                 .task { await repo.fetchAvailable() }
-
-            HistorialRecolectorView()
-                .tabItem { Label("Historial", systemImage: "clock") }
-                .tag(1)
 
             modoToggleTab
         }
         .tint(Color.nexoAmber)
     }
-    
 
-    // MARK: - Tabs: Empresa
+    // MARK: - Empresa (3 tabs: Publicar · Historial · Mapa)
 
     private var empresaTabs: some View {
         TabView(selection: $selectedTab) {
             EmpresaView()
-                .tabItem { Label("Publicar lote", systemImage: "shippingbox") }
-                .tag(0)
+                .tabItem { Label("Publicar lote", systemImage: "shippingbox") }.tag(0)
 
-            MapView(listings: repo.listings.filter { isLoteListing($0) }, isLoading: repo.isLoading)
-                .tabItem { Label("Mis lotes", systemImage: "map") }
-                .tag(1)
-                .task { await repo.fetchAvailable() }
+            HistorialEmpresaView()
+                .tabItem { Label("Mis lotes", systemImage: "clock") }.tag(1)
+
+            MapView(
+                listings: repo.listings.filter { $0.notes?.contains("Tipo:") ?? false },
+                isLoading: repo.isLoading
+            )
+            .tabItem { Label("Mapa", systemImage: "map") }.tag(2)
+            .task { await repo.fetchAvailable() }
 
             modoToggleTab
         }
-        .tint(Color.nexoBlue)
+        .tint(Color.nexoForest)
     }
 
     // MARK: - Modo toggle tab
@@ -103,10 +99,6 @@ struct ContentView: View {
         ModoSelectorView(appMode: $appMode)
             .tabItem { Label("Cambiar modo", systemImage: "arrow.2.squarepath") }
             .tag(99)
-    }
-
-    private func isLoteListing(_ listing: Listing) -> Bool {
-        listing.notes?.contains("Tipo:") ?? false
     }
 }
 
@@ -118,128 +110,96 @@ struct ModoSelectorView: View {
     var body: some View {
         ZStack {
             Color(uiColor: .systemBackground).ignoresSafeArea()
-
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Modo")
-                        .font(.system(size: 10, weight: .semibold))
-                        .tracking(2)
-                        .textCase(.uppercase)
+                        .font(.system(size: 10, weight: .semibold)).tracking(2).textCase(.uppercase)
                         .foregroundStyle(Color.nexoBrand.opacity(0.5))
                     Text("¿Cómo usas\nNEXO ahora?")
-                        .font(.system(size: 32, weight: .bold))
-                        .tracking(-2)
-                        .foregroundStyle(Color.nexoForest)
+                        .font(.system(size: 32, weight: .bold)).tracking(-2).foregroundStyle(Color.nexoForest)
                         .lineSpacing(2)
                 }
-                .padding(.top, 48)
-                .padding(.horizontal, Sp.lg)
-                .padding(.bottom, 32)
+                .padding(.top, 48).padding(.horizontal, Sp.lg).padding(.bottom, 32)
 
-                Rectangle()
-                    .fill(Color.nexoForest.opacity(0.07))
-                    .frame(height: 0.5)
+                Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
 
                 VStack(spacing: 0) {
-                    modoRow(mode: .hogar,      icon: "house",      desc: "Escanea, prepara y comparte residuos",          isOn: appMode == .hogar)
+                    modoRow(mode: .hogar,      icon: "house",       desc: "Escanea, prepara y comparte residuos", isOn: appMode == .hogar)
                     Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
-                    modoRow(mode: .recolector, icon: "figure.walk", desc: "Encuentra materiales en tu ruta",              isOn: appMode == .recolector)
+                    modoRow(mode: .recolector, icon: "figure.walk", desc: "Encuentra materiales en tu ruta",      isOn: appMode == .recolector)
                     Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
                     modoRowEmpresa(isOn: appMode == .empresa)
                     Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
                 }
 
                 Spacer()
-
                 Text("El cambio aplica inmediatamente.")
-                    .font(.system(size: 11, weight: .light))
-                    .foregroundStyle(Color(uiColor: .secondaryLabel))
-                    .padding(.horizontal, Sp.lg)
-                    .padding(.bottom, 32)
+                    .font(.system(size: 11, weight: .light)).foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .padding(.horizontal, Sp.lg).padding(.bottom, 32)
             }
         }
     }
 
     private func modoRow(mode: AppMode, icon: String, desc: String, isOn: Bool) -> some View {
         Button {
-            withAnimation(.easeOut(duration: 0.2)) { appMode = mode }
             saveMode(mode)
+            withAnimation(.easeInOut(duration: 0.25)) { appMode = mode }
         } label: {
             HStack(spacing: Sp.md) {
                 Image(systemName: isOn ? icon + ".fill" : icon)
                     .font(.system(size: 15, weight: .light))
                     .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
-                    .frame(width: 24)
-
+                    .frame(width: 24).animation(.easeOut(duration: 0.2), value: isOn)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(mode.rawValue)
-                        .font(.system(size: 16, weight: isOn ? .semibold : .regular))
+                    Text(mode.rawValue).font(.system(size: 16, weight: isOn ? .semibold : .regular))
                         .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .secondaryLabel))
-                    Text(desc)
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                    Text(desc).font(.system(size: 12, weight: .light)).foregroundStyle(Color(uiColor: .tertiaryLabel))
                 }
-
                 Spacer()
-
                 if isOn {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.nexoForest)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.nexoForest).transition(.scale.combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, Sp.lg)
-            .padding(.vertical, 18)
+            .padding(.horizontal, Sp.lg).padding(.vertical, 18)
             .background(isOn ? Color.nexoForest.opacity(0.04) : Color.clear)
+            .animation(.easeOut(duration: 0.2), value: isOn)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Cambiar a \(mode.rawValue)")
     }
 
     private func modoRowEmpresa(isOn: Bool) -> some View {
         Button {
-            withAnimation(.easeOut(duration: 0.2)) { appMode = .empresa }
             saveMode(.empresa)
+            withAnimation(.easeInOut(duration: 0.25)) { appMode = .empresa }
         } label: {
             HStack(spacing: Sp.md) {
                 Image(systemName: isOn ? "building.2.fill" : "building.2")
                     .font(.system(size: 15, weight: .light))
                     .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .tertiaryLabel))
-                    .frame(width: 24)
-
+                    .frame(width: 24).animation(.easeOut(duration: 0.2), value: isOn)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
-                        Text("Empresa")
-                            .font(.system(size: 16, weight: isOn ? .semibold : .regular))
+                        Text("Empresa").font(.system(size: 16, weight: isOn ? .semibold : .regular))
                             .foregroundStyle(isOn ? Color.nexoForest : Color(uiColor: .secondaryLabel))
-
-                        Text("2.5× impacto")
-                            .font(.system(size: 9, weight: .bold))
-                            .tracking(0.3)
-                            .foregroundStyle(Color.nexoBrand)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
+                        Text("2.5× impacto").font(.system(size: 9, weight: .bold)).tracking(0.3)
+                            .foregroundStyle(Color.nexoBrand).padding(.horizontal, 6).padding(.vertical, 2)
                             .background(Color.nexoBrand.opacity(0.1), in: RoundedRectangle(cornerRadius: 4))
                     }
                     Text("Publica lotes para gestores certificados")
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundStyle(Color(uiColor: .tertiaryLabel))
+                        .font(.system(size: 12, weight: .light)).foregroundStyle(Color(uiColor: .tertiaryLabel))
                 }
-
                 Spacer()
-
                 if isOn {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.nexoForest)
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.nexoForest).transition(.scale.combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, Sp.lg)
-            .padding(.vertical, 18)
+            .padding(.horizontal, Sp.lg).padding(.vertical, 18)
             .background(isOn ? Color.nexoForest.opacity(0.04) : Color.clear)
+            .animation(.easeOut(duration: 0.2), value: isOn)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Cambiar a Modo Empresa")
     }
 
     private func saveMode(_ mode: AppMode) {
@@ -252,5 +212,5 @@ struct ModoSelectorView: View {
 }
 
 #Preview {
-    ContentView().modelContainer(for: FichaRegistro.self, inMemory: true)
+    ContentView().modelContainer(for: [FichaRegistro.self, LoteRegistro.self], inMemory: true)
 }
