@@ -42,6 +42,10 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
     @Published var currentUserId: UUID?
     @Published var avatarURL: String?
+    @Published var nombre: String?
+    @Published var apellido: String?
+    @Published var correo: String?
+    @Published var telefono: String?
     @Published var signupCompleted = false
 
     private let client = SupabaseClientProvider.shared.client
@@ -137,6 +141,10 @@ final class AuthService: ObservableObject {
             isAuthenticated = false
             currentUserId = nil
             avatarURL = nil
+            nombre = nil
+            apellido = nil
+            correo = nil
+            telefono = nil
         } catch {
             print("[Auth] signOut:", error)
         }
@@ -158,18 +166,31 @@ final class AuthService: ObservableObject {
     private func fetchProfile() async {
         guard let id = currentUserId else { return }
         struct P: Decodable {
+            let nombre: String?
+            let apellido: String?
+            let correo: String?
+            let telefono: String?
             let avatarUrl: String?
-            enum CodingKeys: String, CodingKey { case avatarUrl = "avatar_url" }
+            enum CodingKeys: String, CodingKey {
+                case nombre, apellido, correo, telefono
+                case avatarUrl = "avatar_url"
+            }
         }
         do {
             let rows: [P] = try await client
                 .from("profiles")
-                .select("avatar_url")
+                .select("nombre, apellido, correo, telefono, avatar_url")
                 .eq("user_id", value: id.uuidString)
                 .limit(1)
                 .execute()
                 .value
-            avatarURL = rows.first?.avatarUrl
+            if let p = rows.first {
+                nombre    = p.nombre
+                apellido  = p.apellido
+                correo    = p.correo
+                telefono  = p.telefono
+                avatarURL = p.avatarUrl
+            }
         } catch {
             print("[Auth] fetchProfile:", error)
         }
