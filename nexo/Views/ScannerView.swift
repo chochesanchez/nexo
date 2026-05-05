@@ -76,7 +76,7 @@ struct ScannerView: View {
         // ── Flujo Empresa → EmpresaView pre-llenado ──────────────────────
         .sheet(isPresented: $showEmpresaSheet, onDismiss: { resetCamera() }) {
             if let mat = camera.detectedMaterial {
-                EmpresaView(preselectedMaterial: mat)
+                EmpresaView(preselectedMaterial: mat, preselectedImageData: camera.capturedImageData)
                     .presentationDetents([.large])
             }
         }

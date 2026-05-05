@@ -5,9 +5,6 @@
 //  Created by Grecia Saucedo on 05/05/26.
 //
 
-// EmpresaView.swift
-// Agrega parámetro preselectedMaterial para el flujo de scanner.
-
 import SwiftUI
 import CoreLocation
 import SwiftData
@@ -19,8 +16,8 @@ struct EmpresaView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
-    /// Material pre-llenado desde el scanner. Cuando se pasa, arranca en step 1.
-    var preselectedMaterial: NEXOMaterial? = nil
+    var preselectedMaterial  : NEXOMaterial? = nil
+    var preselectedImageData : Data?         = nil
 
     @State private var selectedMaterial : NEXOMaterial?        = nil
     @State private var kgText           : String               = ""
@@ -42,7 +39,8 @@ struct EmpresaView: View {
     ].compactMap { $0 }
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
+            // ── Fondo normal (steps 0 y 1) ──────────────────────────────
             Color(uiColor: .systemBackground).ignoresSafeArea()
 
             VStack {
@@ -59,24 +57,25 @@ struct EmpresaView: View {
                 header
                 Rectangle().fill(Color.nexoForest.opacity(0.07)).frame(height: 0.5)
 
-                if step == 2 {
-                    confirmedView
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            if step == 0 { materialStep }
-                            if step == 1 { detailStep   }
-                        }
-                        .padding(.bottom, 32)
-                        .opacity(contentIn ? 1 : 0)
-                        .offset(y: contentIn ? 0 : 10)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if step == 0 { materialStep }
+                        if step == 1 { detailStep   }
                     }
-                    bottomBar
+                    .padding(.bottom, 32)
+                    .opacity(contentIn ? 1 : 0)
+                    .offset(y: contentIn ? 0 : 10)
                 }
+                bottomBar
+            }
+
+            // ── Confirmación: cubre toda la pantalla ────────────────────
+            if step == 2 {
+                confirmedView
+                    .transition(.opacity)
             }
         }
         .onAppear {
-            // Si viene del scanner, pre-llenar y saltar al step 1
             if let mat = preselectedMaterial {
                 selectedMaterial = mat
                 step = 1
@@ -94,7 +93,6 @@ struct EmpresaView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
-                // Si viene del scanner, muestra el origen
                 if preselectedMaterial != nil && step == 1 {
                     HStack(spacing: 5) {
                         Image(systemName: "viewfinder")
@@ -118,7 +116,6 @@ struct EmpresaView: View {
             }
             Spacer()
 
-            // Si viene como sheet desde scanner, mostrar botón cerrar
             if preselectedMaterial != nil && step < 2 {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -129,7 +126,6 @@ struct EmpresaView: View {
                 }
                 .padding(.top, 4)
             } else if step < 2 {
-                // Dots de progreso solo cuando no viene del scanner (para no confundir)
                 HStack(spacing: 6) {
                     ForEach(0..<2, id: \.self) { i in
                         RoundedRectangle(cornerRadius: 2)
@@ -149,7 +145,7 @@ struct EmpresaView: View {
         switch step {
         case 0:  return "¿Qué material\ngeneran?"
         case 1:  return "Detalles\ndel lote"
-        default: return "Lote\npublicado"
+        default: return ""
         }
     }
 
@@ -325,7 +321,6 @@ struct EmpresaView: View {
                 Text(mat.displayName)
                     .font(.system(size: 14, weight: .semibold)).foregroundStyle(Color.nexoForest)
                 HStack(spacing: 5) {
-                    // Badge "Escaneado" si viene del scanner
                     if preselectedMaterial?.classKey == mat.classKey {
                         HStack(spacing: 4) {
                             Image(systemName: "viewfinder").font(.system(size: 9))
@@ -342,7 +337,6 @@ struct EmpresaView: View {
                 }
             }
             Spacer()
-            // Solo mostrar "Cambiar" si NO viene del scanner (o si el usuario ya cambió de step)
             if preselectedMaterial == nil {
                 Button { withAnimation { step = 0 } } label: {
                     Text("Cambiar").font(.system(size: 11, weight: .medium)).foregroundStyle(Color.nexoBrand)
@@ -411,79 +405,59 @@ struct EmpresaView: View {
     // MARK: - Confirmación
 
     private var confirmedView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            VStack(spacing: 28) {
+        ZStack {
+            Color(hex: "1B5E20")
+                .ignoresSafeArea()
+            VStack(spacing: 20) {
+                Spacer()
                 ZStack {
-                    Circle().fill(Color.nexoMint.opacity(0.5)).frame(width: 80, height: 80)
-                    Circle().fill(Color.nexoForest.opacity(0.08)).frame(width: 80, height: 80)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 28, weight: .semibold)).foregroundStyle(Color.nexoForest)
+                    Circle().fill(Color.white.opacity(0.1)).frame(width: 90, height: 90)
+                    Image(systemName: "shippingbox.fill")
+                        .font(.system(size: 44, weight: .light)).foregroundStyle(.white)
                 }
                 VStack(spacing: 8) {
                     Text("Lote publicado")
-                        .font(.system(size: 26, weight: .bold)).tracking(-1).foregroundStyle(Color.nexoForest)
-                    Text("Los gestores de residuos certificados\ncontactarán a tu empresa.")
+                        .font(.system(size: 22, weight: .bold)).tracking(-1).foregroundStyle(.white)
+                    Text("Los gestores certificados\ncontactarán a tu empresa.")
                         .font(.system(size: 14, weight: .light))
-                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                        .foregroundStyle(.white.opacity(0.75))
                         .multilineTextAlignment(.center).lineSpacing(3)
                 }
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("¿Por qué Modo Empresa?")
-                        .font(.system(size: 10, weight: .semibold)).tracking(1.5).textCase(.uppercase)
-                        .foregroundStyle(Color.nexoBrand.opacity(0.7))
-                    diffRow(icon: "building.2",    text: "Conecta con gestores certificados, no individuales")
-                    diffRow(icon: "scalemass",      text: "Los residuos industriales son el 60% del volumen total")
-                }
-                .padding(Sp.md)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Rd.lg))
-                .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color.nexoForest.opacity(0.07), lineWidth: 0.5))
-                .padding(.horizontal, Sp.lg)
-            }
-            Spacer()
-            // Si es sheet del scanner, ofrece cerrar en lugar de publicar otro
-            if preselectedMaterial != nil {
-                HStack(spacing: 10) {
-                    Button { dismiss() } label: {
-                        Text("Cerrar")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.nexoForest)
-                            .frame(maxWidth: .infinity).frame(height: 54)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Rd.lg))
-                            .overlay(RoundedRectangle(cornerRadius: Rd.lg).strokeBorder(Color.nexoForest.opacity(0.12), lineWidth: 0.5))
+                Spacer()
+                if preselectedMaterial != nil {
+                    HStack(spacing: 10) {
+                        Button { dismiss() } label: {
+                            Text("Cerrar")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(Color(hex: "1B5E20"))
+                                .frame(maxWidth: .infinity).frame(height: 54)
+                                .background(.white, in: RoundedRectangle(cornerRadius: Rd.lg))
+                        }
+                        Button {
+                            withAnimation { step = 1; kgText = ""; notes = "" }
+                        } label: {
+                            Text("Publicar otro")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity).frame(height: 54)
+                                .background(Color.white.opacity(0.15), in: RoundedRectangle(cornerRadius: Rd.lg))
+                        }
                     }
+                    .padding(.horizontal, Sp.lg).padding(.bottom, 40)
+                } else {
                     Button {
-                        withAnimation { step = 1; kgText = ""; notes = "" }
+                        withAnimation { step = 0; selectedMaterial = nil; kgText = ""; notes = "" }
                     } label: {
-                        Text("Publicar otro")
+                        Text("Publicar otro lote")
                             .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
                             .frame(maxWidth: .infinity).frame(height: 54)
-                            .background(Color.nexoForest, in: RoundedRectangle(cornerRadius: Rd.lg))
+                            .background(Color.white.opacity(0.15), in: RoundedRectangle(cornerRadius: Rd.lg))
                     }
+                    .padding(.horizontal, Sp.lg).padding(.bottom, 40)
                 }
-                .padding(.horizontal, Sp.lg).padding(.bottom, 40)
-            } else {
-                Button {
-                    withAnimation { step = 0; selectedMaterial = nil; kgText = ""; notes = "" }
-                } label: {
-                    Text("Publicar otro lote")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
-                        .frame(maxWidth: .infinity).frame(height: 54)
-                        .background(Color.nexoForest, in: RoundedRectangle(cornerRadius: Rd.lg))
-                }
-                .padding(.horizontal, Sp.lg).padding(.bottom, 40)
             }
         }
-    }
-
-    private func diffRow(icon: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .light)).foregroundStyle(Color.nexoBrand).frame(width: 20)
-            Text(text)
-                .font(.system(size: 13, weight: .light)).foregroundStyle(Color.nexoForest.opacity(0.8))
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Bottom bar
@@ -515,7 +489,6 @@ struct EmpresaView: View {
 
             } else {
                 HStack(spacing: 10) {
-                    // Solo mostrar volver si NO viene del scanner (para no confundir con el X)
                     if preselectedMaterial == nil {
                         Button {
                             withAnimation(.easeOut(duration: 0.2)) { contentIn = false }
@@ -591,7 +564,8 @@ struct EmpresaView: View {
             if ok {
                 let registro = LoteRegistro(
                     material: mat, kgEstimados: kg,
-                    frecuencia: frecuencia, tipoGenerador: tipoGenerador, notes: notesStr
+                    frecuencia: frecuencia, tipoGenerador: tipoGenerador,
+                    notes: notesStr, imageData: preselectedImageData
                 )
                 context.insert(registro)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)

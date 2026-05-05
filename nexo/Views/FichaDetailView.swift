@@ -4,7 +4,7 @@ import CoreLocation
 import AVFoundation
 import Combine
 
-// MARK: - Speech manager (compartido con RecoleccionDetailView)
+// MARK: - Speech manager
 
 @MainActor
 final class HistorialSpeech: NSObject, ObservableObject {

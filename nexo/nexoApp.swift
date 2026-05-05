@@ -10,8 +10,11 @@ struct nexoApp: App {
             RootView()
                 .environmentObject(auth)
         }
-        .modelContainer(for: FichaRegistro.self)
-        .modelContainer(for: [FichaRegistro.self, RecoleccionRegistro.self])
+        .modelContainer(for: [
+            FichaRegistro.self,
+            RecoleccionRegistro.self,
+            LoteRegistro.self
+        ])
     }
 }
 

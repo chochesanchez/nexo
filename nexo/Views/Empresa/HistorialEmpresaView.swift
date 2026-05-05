@@ -25,13 +25,15 @@ final class LoteRegistro {
     var fecha         : Date
     var estado        : String   // "activo" | "recogido"
     var supabaseId    : String?
+    var imageData     : Data?
 
     init(
         material      : NEXOMaterial,
         kgEstimados   : Double,
         frecuencia    : FrecuenciaGeneracion,
         tipoGenerador : TipoGenerador,
-        notes         : String = ""
+        notes         : String = "",
+        imageData     : Data? = nil
     ) {
         self.classKey      = material.classKey
         self.displayName   = material.displayName
@@ -45,6 +47,8 @@ final class LoteRegistro {
         self.notes         = notes
         self.fecha         = Date()
         self.estado        = "activo"
+        self.supabaseId    = nil
+        self.imageData     = imageData
     }
 }
 
