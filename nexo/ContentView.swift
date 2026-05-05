@@ -98,6 +98,7 @@ struct ContentView: View {
 
 struct ModoSelectorView: View {
     @Binding var appMode: AppMode
+    @EnvironmentObject private var auth: AuthService
 
     var body: some View {
         VStack(spacing: Sp.xl) {
@@ -120,6 +121,23 @@ struct ModoSelectorView: View {
             }
             .padding(.horizontal, Sp.lg)
             Spacer()
+            Button {
+                Task { await auth.signOut() }
+            } label: {
+                HStack(spacing: Sp.sm) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Cerrar sesión")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: Rd.md))
+            }
+            .padding(.horizontal, Sp.lg)
+            .padding(.bottom, Sp.lg)
+            .accessibilityLabel("Cerrar sesión")
         }
     }
 

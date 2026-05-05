@@ -96,6 +96,7 @@ struct RecolectorView: View {
     var isLoading : Bool
 
     @EnvironmentObject private var repo: ListingsRepository
+    @EnvironmentObject private var auth: AuthService
 
     @StateObject private var voiceCmd = VoiceCommandManager()
     @StateObject private var speech   = RecolectorSpeech()
@@ -176,6 +177,16 @@ struct RecolectorView: View {
                     .padding(.horizontal, 10).padding(.vertical, 5)
                     .background(Color.nexoGreen, in: Capsule())
             }
+            Button {
+                Task { await auth.signOut() }
+            } label: {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.red)
+                    .padding(8)
+                    .background(Color(.secondarySystemBackground), in: Circle())
+            }
+            .accessibilityLabel("Cerrar sesión")
         }
         .padding(.horizontal, Sp.lg).padding(.top, 60).padding(.bottom, Sp.md)
         .background(.ultraThinMaterial)
