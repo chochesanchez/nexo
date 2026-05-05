@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import CoreLocation
 import AVFoundation
+import Combine
 
 // MARK: - Speech manager (compartido con RecoleccionDetailView)
 
