@@ -11,6 +11,7 @@ struct nexoApp: App {
                 .environmentObject(auth)
         }
         .modelContainer(for: FichaRegistro.self)
+        .modelContainer(for: [FichaRegistro.self, RecoleccionRegistro.self])
     }
 }
 

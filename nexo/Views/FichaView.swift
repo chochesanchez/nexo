@@ -27,14 +27,14 @@ extension SpeechManager: AVSpeechSynthesizerDelegate {
 }
 
 struct FichaView: View {
-    let material  : NEXOMaterial
-    let ocrText   : String?
-    var imageData : Data? = nil
-    var remoteImageURL: String? = nil
+    let material       : NEXOMaterial
+    let ocrText        : String?
+    var imageData      : Data?   = nil
+    var remoteImageURL : String? = nil
     @Binding var isPresented: Bool
 
     @Environment(\.modelContext)    private var context
-    @EnvironmentObject private var location : LocationManager
+    @EnvironmentObject private var location: LocationManager
 
     @ObservedObject private var fmService = FoundationModelsService.shared
     @StateObject    private var speech    = SpeechManager()
@@ -45,6 +45,7 @@ struct FichaView: View {
     @State private var isGuardando   = false
     @State private var showSuccess   = false
     @State private var instruccionFM : String? = nil
+    @State private var factIA        : String? = nil   // ← fact contextual
 
     var body: some View {
         ZStack {
@@ -57,6 +58,10 @@ struct FichaView: View {
                         scanImageCard
                         routeBadgeRow
                         instructionsCard
+                        // ── Fact card: aparece mientras carga o cuando llega el dato ──
+                        if fmService.isGeneratingFact || factIA != nil {
+                            factCard
+                        }
                         if let tip = material.smellTip { smellCard(tip) }
                         if let ocr = ocrText           { ocrCard(ocr)   }
                         metricsRow
@@ -68,7 +73,6 @@ struct FichaView: View {
                 actionBar
             }
 
-            // Success overlay
             if showSuccess { successOverlay }
         }
         .ignoresSafeArea(edges: .top)
@@ -76,12 +80,16 @@ struct FichaView: View {
             withAnimation(.easeOut(duration: 0.4).delay(0.05))  { heroIn    = true }
             withAnimation(.easeOut(duration: 0.35).delay(0.3))  { contentIn = true }
             location.startUpdating()
-            Task { instruccionFM = await fmService.generarInstruccion(material: material, textoOCR: ocrText) }
+            Task {
+                instruccionFM = await fmService.generarInstruccion(material: material, textoOCR: ocrText)
+                factIA        = await fmService.generarFact(material: material)
+            }
         }
         .onDisappear { speech.stop() }
     }
 
     // MARK: - Header
+
     private var header: some View {
         ZStack(alignment: .bottom) {
             material.accent.ignoresSafeArea()
@@ -95,7 +103,7 @@ struct FichaView: View {
                             .background(.ultraThinMaterial, in: Circle())
                     }.accessibilityLabel("Cerrar")
                     Spacer()
-                    if fmService.isGenerating {
+                    if fmService.isGenerating || fmService.isGeneratingFact {
                         HStack(spacing: 6) {
                             ProgressView().tint(.white).scaleEffect(0.7)
                             Text("Generando").font(.system(size: 10, weight: .medium)).foregroundStyle(.white.opacity(0.7))
@@ -113,7 +121,8 @@ struct FichaView: View {
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
                     VStack(alignment: .leading, spacing: 4) {
                         Text(material.classKey.uppercased())
-                            .font(.system(size: 9, weight: .semibold)).tracking(2).foregroundStyle(.white.opacity(0.65))
+                            .font(.system(size: 9, weight: .semibold)).tracking(2)
+                            .foregroundStyle(.white.opacity(0.65))
                         Text(material.displayName)
                             .font(.system(size: 26, weight: .bold)).tracking(-0.8).foregroundStyle(.white)
                             .scaleEffect(heroIn ? 1 : 0.95, anchor: .leading).opacity(heroIn ? 1 : 0)
@@ -126,15 +135,13 @@ struct FichaView: View {
     }
 
     // MARK: - Sections
+
     @ViewBuilder
     private var scanImageCard: some View {
         if let data = imageData, let ui = UIImage(data: data) {
             Image(uiImage: ui)
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: 220)
-                .clipped()
+                .resizable().scaledToFill()
+                .frame(maxWidth: .infinity).frame(height: 220).clipped()
                 .background(Color(uiColor: .systemBackground))
                 .accessibilityLabel("Foto del residuo escaneado")
         } else if let urlStr = remoteImageURL, let url = URL(string: urlStr) {
@@ -146,11 +153,8 @@ struct FichaView: View {
                 case .failure:
                     Rectangle().fill(Color(uiColor: .systemGray6))
                         .frame(maxWidth: .infinity).frame(height: 220)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .font(.system(size: 24))
-                                .foregroundStyle(Color(uiColor: .tertiaryLabel))
-                        )
+                        .overlay(Image(systemName: "photo").font(.system(size: 24))
+                            .foregroundStyle(Color(uiColor: .tertiaryLabel)))
                 default:
                     Rectangle().fill(Color(uiColor: .systemGray6))
                         .frame(maxWidth: .infinity).frame(height: 220)
@@ -195,6 +199,70 @@ struct FichaView: View {
         .background(Color(uiColor: .systemBackground))
     }
 
+    // MARK: - Fact card contextual ← NUEVO
+
+    private var factCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.nexoBrand)
+                Text("Dato de impacto")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.5)
+                    .textCase(.uppercase)
+                    .foregroundStyle(Color.nexoBrand)
+                Spacer()
+                Text("Foundation Models")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.nexoBrand)
+                    .padding(.horizontal, 5).padding(.vertical, 2)
+                    .background(Color.nexoMint, in: RoundedRectangle(cornerRadius: 4))
+            }
+
+            // Contenido — skeleton mientras carga
+            if fmService.isGeneratingFact && factIA == nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    skeletonLine(width: 1.0)
+                    skeletonLine(width: 0.82)
+                    skeletonLine(width: 0.60)
+                }
+            } else if let fact = factIA {
+                Text(fact)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Color(uiColor: .label))
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .padding(Sp.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.nexoMint.opacity(0.45))
+        // Borde verde izquierdo — marca visual de "dato generado"
+        .overlay(
+            Rectangle()
+                .fill(Color.nexoBrand)
+                .frame(width: 3),
+            alignment: .leading
+        )
+        .padding(.top, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(factIA.map { "Dato de impacto: \($0)" } ?? "Generando dato de impacto")
+    }
+
+    private func skeletonLine(width: Double) -> some View {
+        GeometryReader { geo in
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.nexoBrand.opacity(0.15))
+                .frame(width: geo.size.width * width, height: 10)
+        }
+        .frame(height: 10)
+    }
+
+    // MARK: - Smell / OCR cards
+
     private func smellCard(_ tip: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "nose").font(.system(size: 14)).foregroundStyle(.orange)
@@ -217,9 +285,11 @@ struct FichaView: View {
         .background(Color.nexoBlue.opacity(0.06))
     }
 
+    // MARK: - Metrics / Value
+
     private var metricsRow: some View {
         HStack(spacing: 0) {
-            metricCell(label: "CO₂ evitado", value: material.co2, color: Color.nexoBrand)
+            metricCell(label: "CO₂ evitado",   value: material.co2,   color: Color.nexoBrand)
             if material.water != "—" {
                 Divider().frame(height: 48)
                 metricCell(label: "Agua ahorrada", value: material.water, color: Color.nexoBlue)
@@ -254,11 +324,10 @@ struct FichaView: View {
         .background(Color(hex: "FFFCE8")).padding(.top, 2)
     }
 
-    // MARK: - Action bar — ahora guarda localmente, NO publica
+    // MARK: - Action bar
+
     private var actionBar: some View {
         VStack(spacing: 8) {
-
-            // BOTÓN PRINCIPAL: Guardar en historial (pendiente)
             Button { guardarFicha() } label: {
                 Group {
                     if isGuardando {
@@ -282,7 +351,6 @@ struct FichaView: View {
             }
             .disabled(guardada || isGuardando)
 
-            // Leer en voz alta
             Button { speech.toggle(text: voiceText) } label: {
                 HStack(spacing: 7) {
                     Image(systemName: speech.isSpeaking ? "speaker.slash" : "speaker.wave.2")
@@ -302,6 +370,7 @@ struct FichaView: View {
     }
 
     // MARK: - Success overlay
+
     private var successOverlay: some View {
         ZStack {
             Color.nexoForest.opacity(0.97).ignoresSafeArea()
@@ -331,6 +400,7 @@ struct FichaView: View {
     }
 
     // MARK: - Guardar en SwiftData como pendiente
+
     private func guardarFicha() {
         guard !guardada else { return }
         isGuardando = true

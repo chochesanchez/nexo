@@ -7,6 +7,7 @@
 // ContentView.swift — Light mode, ModoSelectorView con cerrar sesión restaurado
 import SwiftUI
 import SwiftData
+import Combine
 
 struct ContentView: View {
     @State private var selectedTab: Int = 0
@@ -64,10 +65,15 @@ struct ContentView: View {
                 .tag(0)
                 .task { await repo.fetchAvailable() }
 
+            HistorialRecolectorView()
+                .tabItem { Label("Historial", systemImage: "clock") }
+                .tag(1)
+
             modoToggleTab
         }
         .tint(Color.nexoBrand)
     }
+    
 
     private var modoToggleTab: some View {
         ModoSelectorView(appMode: $appMode)
