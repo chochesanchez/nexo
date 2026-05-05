@@ -1,27 +1,35 @@
 // ScannerView.swift
+// Actualizado para pasar el texto OCR detectado por VNRecognizeTextRequest
+// a FichaView, donde Foundation Models lo usa para contextualizar la instrucción.
+
 import SwiftUI
 import AVFoundation
 
 struct ScannerView: View {
     @Binding var appMode: AppMode
-    @StateObject private var camera  = CameraManager()
-    @State private var showFicha     = false
-    @State private var pulse         = false
+    @StateObject private var camera = CameraManager()
+    @State private var showFicha    = false
+    @State private var pulse        = false
     @State private var btnScale: CGFloat = 1
 
     var body: some View {
         ZStack {
             CameraPreview(session: camera.session).ignoresSafeArea()
+
+            // Gradientes superiores e inferiores
             VStack {
-                LinearGradient(colors: [.black.opacity(0.55), .clear], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [.black.opacity(0.55), .clear],
+                               startPoint: .top, endPoint: .bottom)
                     .frame(height: 160)
                 Spacer()
             }.ignoresSafeArea()
             VStack {
                 Spacer()
-                LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [.clear, .black.opacity(0.55)],
+                               startPoint: .top, endPoint: .bottom)
                     .frame(height: 240)
             }.ignoresSafeArea()
+
             VStack(spacing: 0) {
                 topBar
                 Spacer()
@@ -30,19 +38,31 @@ struct ScannerView: View {
                 bottomCard
             }
         }
-        .onAppear  { camera.start() }
+        .onAppear   { camera.start() }
         .onDisappear { camera.stop() }
-        .onChange(of: camera.detectedMaterial) { mat in if mat != nil { showFicha = true } }
+        .onChange(of: camera.detectedMaterial) { mat in
+            if mat != nil { showFicha = true }
+        }
         .fullScreenCover(isPresented: $showFicha) {
             if let mat = camera.detectedMaterial {
-                FichaView(material: mat, isPresented: $showFicha)
-                    .onDisappear { camera.detectedMaterial = nil }
+                FichaView(
+                    material    : mat,
+                    ocrText     : camera.detectedOCRText,  // ← nuevo: pasa OCR
+                    isPresented : $showFicha
+                )
+                .onDisappear {
+                    camera.detectedMaterial = nil
+                    camera.detectedOCRText  = nil
+                }
             }
         }
-        .alert("Intenta de nuevo", isPresented: .constant(camera.errorMessage != nil)) {
+        .alert("Intenta de nuevo",
+               isPresented: .constant(camera.errorMessage != nil)) {
             Button("OK") { camera.errorMessage = nil }
         } message: { Text(camera.errorMessage ?? "") }
     }
+
+    // MARK: - Barra superior con toggle de modo
 
     private var topBar: some View {
         HStack(alignment: .center) {
@@ -70,22 +90,29 @@ struct ScannerView: View {
         .padding(.horizontal, Sp.lg).padding(.top, Sp.md)
     }
 
+    // MARK: - Visor con animación de pulso
+
     private var viewfinder: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 20)
                 .strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
                 .frame(width: 250, height: 250)
                 .scaleEffect(pulse ? 1.04 : 1)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pulse)
+                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                           value: pulse)
                 .onAppear { pulse = true }
+
             CornerFrame(size: 250, cornerLen: 28, color: .nexoAmber, lw: 3)
+
             if camera.isAnalyzing {
                 RoundedRectangle(cornerRadius: 20).fill(.black.opacity(0.65))
                     .frame(width: 250, height: 250)
                     .overlay {
                         VStack(spacing: 14) {
                             ProgressView().tint(.white).scaleEffect(1.4)
-                            Text("Analizando…").font(.system(size: 15, weight: .medium)).foregroundStyle(.white)
+                            Text("Analizando…")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.white)
                         }
                     }
             }
@@ -94,12 +121,17 @@ struct ScannerView: View {
         .accessibilityLabel(camera.isAnalyzing ? "Analizando residuo" : "Visor de cámara")
     }
 
+    // MARK: - Tarjeta inferior con botón de captura
+
     private var bottomCard: some View {
         VStack(spacing: Sp.lg) {
-            Text(camera.isAnalyzing ? "Un momento…" : "Apunta a un residuo y toca el botón")
+            Text(camera.isAnalyzing
+                 ? "Un momento…"
+                 : "Apunta a un residuo y toca el botón")
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.white.opacity(0.9))
                 .multilineTextAlignment(.center)
+
             Button {
                 guard !camera.isAnalyzing else { return }
                 withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) { btnScale = 0.88 }
@@ -112,7 +144,8 @@ struct ScannerView: View {
                     Circle().fill(Color.nexoAmber).frame(width: 76, height: 76)
                         .shadow(color: .nexoAmber.opacity(0.45), radius: 18, y: 6)
                     Image(systemName: camera.isAnalyzing ? "hourglass" : "viewfinder")
-                        .font(.system(size: 30, weight: .semibold)).foregroundStyle(Color.nexoDeep)
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundStyle(Color.nexoDeep)
                 }
             }
             .scaleEffect(btnScale).disabled(camera.isAnalyzing)
@@ -122,20 +155,23 @@ struct ScannerView: View {
     }
 }
 
+// MARK: - Corner Frame helper (igual que antes)
+
 struct CornerFrame: View {
     let size: CGFloat; let cornerLen: CGFloat; let color: Color; let lw: CGFloat
     var body: some View {
         Canvas { ctx, sz in
             let w = sz.width, h = sz.height, c = cornerLen
             let corners: [(CGPoint, CGPoint, CGPoint)] = [
-                (CGPoint(x: 0, y: c),   CGPoint(x: 0, y: 0),   CGPoint(x: c, y: 0)),
-                (CGPoint(x: w-c, y: 0), CGPoint(x: w, y: 0),   CGPoint(x: w, y: c)),
-                (CGPoint(x: 0, y: h-c), CGPoint(x: 0, y: h),   CGPoint(x: c, y: h)),
-                (CGPoint(x: w-c, y: h), CGPoint(x: w, y: h),   CGPoint(x: w, y: h-c)),
+                (CGPoint(x: 0,   y: c),   CGPoint(x: 0, y: 0),   CGPoint(x: c,   y: 0)),
+                (CGPoint(x: w-c, y: 0),   CGPoint(x: w, y: 0),   CGPoint(x: w,   y: c)),
+                (CGPoint(x: 0,   y: h-c), CGPoint(x: 0, y: h),   CGPoint(x: c,   y: h)),
+                (CGPoint(x: w-c, y: h),   CGPoint(x: w, y: h),   CGPoint(x: w,   y: h-c)),
             ]
             for (a, b, cc) in corners {
                 var p = Path(); p.move(to: a); p.addLine(to: b); p.addLine(to: cc)
-                ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: lw, lineCap: .round, lineJoin: .round))
+                ctx.stroke(p, with: .color(color),
+                           style: StrokeStyle(lineWidth: lw, lineCap: .round, lineJoin: .round))
             }
         }
         .frame(width: size, height: size)

@@ -1,8 +1,15 @@
 // FichaView.swift
+// Corrección: @ObservedObject para el singleton FoundationModelsService
+// (no @StateObject, que es para objetos de los que la vista toma ownership).
+// También elimina el import CoreLocation duplicado al final.
+
 import SwiftUI
 import AVFoundation
 import Combine
 import SwiftData
+import CoreLocation
+
+// MARK: - Speech Manager
 
 private final class SpeechManager: NSObject, ObservableObject {
     @Published var isSpeaking = false
@@ -12,26 +19,42 @@ private final class SpeechManager: NSObject, ObservableObject {
         if isSpeaking { synth.stopSpeaking(at: .immediate); isSpeaking = false }
         else {
             let utt = AVSpeechUtterance(string: text)
-            utt.voice = AVSpeechSynthesisVoice(language: "es-MX"); utt.rate = 0.44
+            utt.voice = AVSpeechSynthesisVoice(language: "es-MX")
+            utt.rate  = 0.44
             synth.speak(utt); isSpeaking = true
         }
     }
     func stop() { synth.stopSpeaking(at: .immediate); isSpeaking = false }
 }
 extension SpeechManager: AVSpeechSynthesizerDelegate {
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
+                           didFinish utterance: AVSpeechUtterance) {
         DispatchQueue.main.async { self.isSpeaking = false }
     }
 }
 
+// MARK: - FichaView
+
 struct FichaView: View {
-    let material    : NEXOMaterial
+    let material   : NEXOMaterial
+    let ocrText    : String?
     @Binding var isPresented: Bool
+
     @Environment(\.modelContext) private var context
+    @EnvironmentObject private var repo     : ListingsRepository
+    @EnvironmentObject private var location : LocationManager
+
+    // @ObservedObject (no @StateObject) porque es un singleton externo
+    @ObservedObject private var fmService = FoundationModelsService.shared
+
     @StateObject private var speech = SpeechManager()
-    @State private var iconIn    = false
-    @State private var contentIn = false
-    @State private var compartida = false
+
+    @State private var iconIn       = false
+    @State private var contentIn    = false
+    @State private var compartida   = false
+    @State private var isPublishing = false
+    @State private var publishError : String? = nil
+    @State private var instruccionFM: String? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,8 +62,10 @@ struct FichaView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: Sp.lg) {
                     routeBadge
-                    instructionsCard
+                    if let fm = instruccionFM { fmCard(fm) }
+                    else                      { instructionsCard }
                     if let tip = material.smellTip { smellCard(tip) }
+                    if let ocr = ocrText           { ocrCard(ocr) }
                     impactRow
                     valueRow
                 }
@@ -53,9 +78,51 @@ struct FichaView: View {
         .onAppear {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) { iconIn = true }
             withAnimation(.easeOut(duration: 0.4).delay(0.35)) { contentIn = true }
+            location.startUpdating()
+            Task { instruccionFM = await fmService.generarInstruccion(material: material, textoOCR: ocrText) }
         }
         .onDisappear { speech.stop() }
+        .alert("No se pudo publicar", isPresented: .constant(publishError != nil)) {
+            Button("OK") { publishError = nil }
+        } message: { Text(publishError ?? "") }
     }
+
+    // MARK: - Publicar
+
+    private var voiceText: String {
+        let base = instruccionFM ?? material.voiceText
+        let tip  = material.smellTip.map { " \($0)" } ?? ""
+        return "\(material.displayName). \(base)\(tip) Valor estimado: \(material.value)."
+    }
+
+    private func publicarFicha() {
+        guard !compartida else { return }
+        if !location.isAvailable { location.requestWhenInUse() }
+        isPublishing = true
+        Task {
+            let coord = location.anonymizedCoordinate
+                     ?? location.coordinate
+                     ?? CLLocationCoordinate2D(latitude: 19.4326, longitude: -99.1332)
+            let nuevo = NewListing(
+                material      : material.displayName,
+                quantityLabel : "1 unidad",
+                notes         : instruccionFM ?? material.instructions.joined(separator: ". "),
+                lat           : coord.latitude,
+                lng           : coord.longitude
+            )
+            let ok = await repo.publish(nuevo)
+            isPublishing = false
+            if ok {
+                context.insert(FichaRegistro(material: material))
+                withAnimation(.spring(response: 0.3)) { compartida = true }
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            } else {
+                publishError = repo.lastError ?? "Intenta de nuevo."
+            }
+        }
+    }
+
+    // MARK: - Header
 
     private var header: some View {
         ZStack(alignment: .bottom) {
@@ -63,30 +130,48 @@ struct FichaView: View {
             VStack(spacing: Sp.md) {
                 HStack {
                     Button { speech.stop(); isPresented = false } label: {
-                        Image(systemName: "xmark").font(.system(size: 15, weight: .semibold))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(.white).padding(10)
                             .background(.white.opacity(0.25), in: Circle())
                     }.accessibilityLabel("Cerrar")
                     Spacer()
-                }.padding(.horizontal, Sp.lg).padding(.top, 60)
-                Image(systemName: material.icon).font(.system(size: 62, weight: .light))
-                    .foregroundStyle(.white).scaleEffect(iconIn ? 1 : 0.4).opacity(iconIn ? 1 : 0)
+                    if fmService.isGenerating {
+                        ProgressView().tint(.white)
+                            .accessibilityLabel("Generando instrucciones")
+                    }
+                }
+                .padding(.horizontal, Sp.lg).padding(.top, 60)
+                Image(systemName: material.icon)
+                    .font(.system(size: 62, weight: .light)).foregroundStyle(.white)
+                    .scaleEffect(iconIn ? 1 : 0.4).opacity(iconIn ? 1 : 0)
                     .accessibilityHidden(true)
-                Text(material.displayName).font(.system(size: 28, weight: .bold, design: .rounded))
+                Text(material.displayName)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundStyle(.white).accessibilityAddTraits(.isHeader)
                 Spacer().frame(height: Sp.lg)
             }
         }.frame(height: 270)
     }
 
-    private var routeBadge: some View {
-        HStack(spacing: Sp.sm) {
-            Image(systemName: material.route.icon).font(.system(size: 13, weight: .semibold))
-            Text(material.route.rawValue).font(.system(size: 14, weight: .semibold))
+    // MARK: - Cards
+
+    private func fmCard(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: Sp.sm) {
+            HStack(spacing: Sp.sm) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(material.accent)
+                Text("Cómo prepararlo")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary).textCase(.uppercase).kerning(0.6)
+            }
+            Text(text).font(.system(size: 15)).foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .foregroundStyle(material.route.color).padding(.horizontal, 14).padding(.vertical, 8)
-        .background(material.route.color.opacity(0.12), in: Capsule())
-        .accessibilityLabel("Ruta: \(material.route.rawValue)")
+        .padding(Sp.md)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Instrucciones generadas: \(text)")
     }
 
     private var instructionsCard: some View {
@@ -95,7 +180,8 @@ struct FichaView: View {
             VStack(spacing: Sp.sm) {
                 ForEach(Array(material.instructions.enumerated()), id: \.offset) { i, step in
                     HStack(alignment: .top, spacing: Sp.md) {
-                        Text("\(i + 1)").font(.system(size: 12, weight: .bold, design: .rounded))
+                        Text("\(i + 1)")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                             .foregroundStyle(.white).frame(width: 22, height: 22)
                             .background(material.accent, in: Circle())
                         Text(step).font(.system(size: 15)).foregroundStyle(.primary)
@@ -106,7 +192,8 @@ struct FichaView: View {
                     .accessibilityLabel("Paso \(i + 1): \(step)")
                 }
             }
-            .padding(Sp.md).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
+            .padding(Sp.md)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
         }
     }
 
@@ -115,15 +202,43 @@ struct FichaView: View {
             Image(systemName: "nose").font(.system(size: 16)).foregroundStyle(.orange)
             Text(tip).font(.system(size: 14)).foregroundStyle(.secondary)
         }
-        .padding(Sp.md).background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: Rd.md))
+        .padding(Sp.md)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: Rd.md))
         .accessibilityLabel("Tip de olor: \(tip)")
+    }
+
+    private func ocrCard(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: Sp.sm) {
+            Image(systemName: "text.viewfinder")
+                .font(.system(size: 14)).foregroundStyle(Color.nexoBlue)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Texto en la etiqueta")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary).textCase(.uppercase).kerning(0.5)
+                Text(text).font(.system(size: 13)).foregroundStyle(.primary)
+            }
+        }
+        .padding(Sp.md)
+        .background(Color.nexoBlue.opacity(0.10), in: RoundedRectangle(cornerRadius: Rd.md))
+        .accessibilityLabel("Texto en etiqueta: \(text)")
+    }
+
+    private var routeBadge: some View {
+        HStack(spacing: Sp.sm) {
+            Image(systemName: material.route.icon).font(.system(size: 13, weight: .semibold))
+            Text(material.route.rawValue).font(.system(size: 14, weight: .semibold))
+        }
+        .foregroundStyle(material.route.color)
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(material.route.color.opacity(0.12), in: Capsule())
+        .accessibilityLabel("Ruta: \(material.route.rawValue)")
     }
 
     private var impactRow: some View {
         HStack(spacing: Sp.sm) {
-            impactCell(icon: "wind", label: "CO₂ evitado", value: material.co2, color: Color.nexoGreen)
+            impactCell(icon: "wind",      label: "CO₂ evitado",  value: material.co2,   color: .nexoGreen)
             if material.water != "—" {
-                impactCell(icon: "drop.fill", label: "Agua ahorrada", value: material.water, color: Color.nexoBlue)
+                impactCell(icon: "drop.fill", label: "Agua ahorrada", value: material.water, color: .nexoBlue)
             }
         }
     }
@@ -134,7 +249,7 @@ struct FichaView: View {
                 Image(systemName: icon).font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
                 Text(label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
             }
-            Text(value).font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(.primary)
+            Text(value).font(.system(size: 17, weight: .bold, design: .rounded))
         }
         .frame(maxWidth: .infinity, alignment: .leading).padding(Sp.md)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
@@ -148,28 +263,32 @@ struct FichaView: View {
             Spacer()
             Text(material.value).font(.system(size: 14, weight: .bold))
         }
-        .padding(Sp.md).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
+        .padding(Sp.md)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: Rd.md))
         .accessibilityElement(children: .combine).accessibilityLabel("Valor estimado: \(material.value)")
     }
 
+    // MARK: - Action Buttons
+
     private var actionButtons: some View {
         VStack(spacing: Sp.sm) {
-            Button {
-                guard !compartida else { return }
-                context.insert(FichaRegistro(material: material))
-                withAnimation(.spring(response: 0.3)) { compartida = true }
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            } label: {
-                Label(compartida ? "Ficha compartida ✓" : "Compartir ficha",
-                      systemImage: compartida ? "checkmark.circle.fill" : "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, 16)
-                    .background(compartida ? Color.nexoGreen : Color.nexoDeep, in: RoundedRectangle(cornerRadius: Rd.pill))
+            Button { publicarFicha() } label: {
+                Group {
+                    if isPublishing { ProgressView().tint(.white) }
+                    else {
+                        Label(compartida ? "Ficha compartida ✓" : "Compartir ficha",
+                              systemImage: compartida ? "checkmark.circle.fill" : "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    }
+                }
+                .frame(maxWidth: .infinity).padding(.vertical, 16)
+                .background(compartida ? Color.nexoGreen : Color.nexoDeep,
+                            in: RoundedRectangle(cornerRadius: Rd.pill))
             }
-            .disabled(compartida)
+            .disabled(compartida || isPublishing)
             .accessibilityLabel(compartida ? "Ficha ya compartida" : "Compartir ficha con recolectores")
 
-            Button { speech.toggle(text: material.voiceText) } label: {
+            Button { speech.toggle(text: voiceText) } label: {
                 Label(speech.isSpeaking ? "Detener lectura" : "Leer en voz alta",
                       systemImage: speech.isSpeaking ? "speaker.slash.fill" : "speaker.wave.2.fill")
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(Color.nexoDeep)
