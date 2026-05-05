@@ -345,3 +345,5 @@ struct FichaView: View {
             .textCase(.uppercase).kerning(0.6).accessibilityAddTraits(.isHeader)
     }
 }
+
+

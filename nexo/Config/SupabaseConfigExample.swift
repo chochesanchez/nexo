@@ -5,7 +5,6 @@
 //  Created by Guillermo Lira on 04/05/26.
 //
 
-
 import Foundation
 
 enum SupabaseConfigExample {

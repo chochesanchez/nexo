@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
+<<<<<<< Updated upstream
    LastUpgradeVersion = "2630"
+=======
+   LastUpgradeVersion = "2640"
+>>>>>>> Stashed changes
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -39,7 +43,12 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
+<<<<<<< Updated upstream
       allowLocationSimulation = "YES">
+=======
+      allowLocationSimulation = "YES"
+      queueDebuggingEnableBacktraceRecording = "Yes">
+>>>>>>> Stashed changes
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

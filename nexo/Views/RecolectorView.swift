@@ -1,8 +1,4 @@
 // RecolectorView.swift
-// Fixes:
-// 1. PinView se llama solo con (material:) + trailing closure — sin isSelected ni parámetros extra
-// 2. mockPins() ahora es internal en MapView.swift — se puede usar directamente
-// 3. FichaRecolectorSheet llama FichaView con ocrText: nil
 
 import SwiftUI
 import MapKit

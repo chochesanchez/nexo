@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
+<<<<<<< Updated upstream
    LastUpgradeVersion = "2630"
+=======
+   LastUpgradeVersion = "2640"
+>>>>>>> Stashed changes
    wasCreatedForAppExtension = "YES"
    version = "2.0">
    <BuildAction
@@ -56,7 +60,12 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES"
+<<<<<<< Updated upstream
       launchAutomaticallySubstyle = "2">
+=======
+      launchAutomaticallySubstyle = "2"
+      queueDebuggingEnableBacktraceRecording = "Yes">
+>>>>>>> Stashed changes
       <RemoteRunnable
          runnableDebuggingMode = "2"
          BundleIdentifier = "com.apple.springboard">
@@ -98,11 +107,14 @@
             value = "NEXOWidget"
             isEnabled = "YES">
          </EnvironmentVariable>
+<<<<<<< Updated upstream
          <EnvironmentVariable
             key = ""
             value = ""
             isEnabled = "YES">
          </EnvironmentVariable>
+=======
+>>>>>>> Stashed changes
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction

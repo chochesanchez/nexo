@@ -14,7 +14,10 @@ import SwiftData
 
 struct ContentView: View {
     @State private var selectedTab : Int     = 0
-    @State private var appMode     : AppMode = .hogar
+    @State private var appMode: AppMode = {
+        let saved = UserDefaults.standard.string(forKey: "nexoRole")
+        return saved == "recolector" ? .recolector : .hogar
+    }()
 
     @StateObject private var repo     = ListingsRepository()
     @StateObject private var location = LocationManager.shared

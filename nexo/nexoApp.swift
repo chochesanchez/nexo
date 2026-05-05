@@ -30,7 +30,7 @@ struct RootView: View {
                         if url.host == "historial" { NotificationCenter.default.post(name: .nexoOpenHistorial, object: nil) }
                     }
             } else {
-                LoginView()
+                SignUpView()
             }
         }
         .task {
