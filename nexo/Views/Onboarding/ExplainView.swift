@@ -4,118 +4,105 @@
 //
 //  Created by Grecia Saucedo on 04/05/26.
 //
+// ExplainView.swift — Rediseño Bateman/Apple
 import SwiftUI
 
-// MARK: - Explain View
 struct ExplainView: View {
     @State private var selectedRole: AppRole? = nil
-    @State private var contentOpacity: Double = 0
+    @State private var contentIn = false
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            Color.nexoBlack.ignoresSafeArea()
 
-            // MARK: Header
-            ZStack(alignment: .bottomLeading) {
-                Color.nexoGreen
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 220)
+            VStack(alignment: .leading, spacing: 0) {
 
-                VStack(alignment: .leading, spacing: Sp.xs) {
-                    Text("¿Cómo vas a\nusar NEXO?")
-                        .font(.system(size: 36, weight: .black, design: .rounded))
-                        .foregroundColor(.nexoDeep)
-                        .lineSpacing(2)
+                // Header
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("¿Cómo usas NEXO?")
+                        .font(.system(size: 36, weight: .black))
+                        .tracking(-2)
+                        .foregroundStyle(.white)
 
+                    Text("Esto determina tu pantalla principal.\nPuedes cambiarlo después.")
+                        .font(.system(size: 13, weight: .light))
+                        .foregroundStyle(Color.white.opacity(0.35))
+                        .lineSpacing(3)
                 }
+                .padding(.top, 80)
                 .padding(.horizontal, Sp.lg)
-                .padding(.bottom, Sp.sm)
-                .padding(.top, 60)
-            }
+                .padding(.bottom, 40)
 
-            WaveShape()
-                .fill(Color.nexoGreen)
-                .frame(height: 36)
-                .offset(y: -1)
-
-            // MARK: Contenido
-            VStack(spacing: Sp.lg) {
-
-                Text("NEXO identifica tus residuos, te dice cómo prepararlos y los conecta con recolectores cercanos.")
-                    .font(.system(size: 18, weight: .regular, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                // Regla
+                Rectangle()
+                    .fill(Color.white.opacity(0.06))
+                    .frame(height: 0.5)
                     .padding(.horizontal, Sp.lg)
+                    .padding(.bottom, 32)
 
-                // MARK: Tarjetas
-                VStack(spacing: Sp.md) {
+                // Tarjetas de rol
+                VStack(spacing: 10) {
                     RoleCard(
-                        icon: "house.fill",
+                        icon: "house",
                         title: "Hogar, escuela o negocio",
-                        description: "Escaneo residuos y los preparo para que los recojan.",
+                        description: "Identifico residuos y los preparo para recolección.",
                         isSelected: selectedRole == .hogar
-                    ) { selectedRole = .hogar }
+                    ) { withAnimation(.easeOut(duration: 0.2)) { selectedRole = .hogar } }
 
                     RoleCard(
                         icon: "figure.walk",
                         title: "Soy recolector",
                         description: "Busco materiales preparados cerca de mi ruta.",
                         isSelected: selectedRole == .recolector
-                    ) { selectedRole = .recolector }
+                    ) { withAnimation(.easeOut(duration: 0.2)) { selectedRole = .recolector } }
                 }
                 .padding(.horizontal, Sp.lg)
+                .opacity(contentIn ? 1 : 0)
+                .offset(y: contentIn ? 0 : 16)
 
                 Spacer()
 
-                // MARK: Boton cuenta
+                // CTA
                 NavigationLink(destination: SignUpView()) {
-                    Text("Crear mi cuenta")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(.nexoGreen)
+                    Text(selectedRole == nil ? "Selecciona un modo" : "Continuar")
+                        .font(.system(size: 13, weight: .bold))
+                        .tracking(0.8)
+                        .textCase(.uppercase)
+                        .foregroundStyle(selectedRole == nil ? Color.white.opacity(0.2) : Color.nexoBlack)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(selectedRole == nil ? Color(.systemGray4) : Color.nexoDeep)
-                        .clipShape(Capsule())
+                        .frame(height: 52)
+                        .background(selectedRole == nil ? Color.white.opacity(0.05) : Color.nexoAmber)
+                        .clipShape(RoundedRectangle(cornerRadius: Rd.sm))
+                        .animation(.easeOut(duration: 0.25), value: selectedRole)
                 }
                 .disabled(selectedRole == nil)
-                .opacity(selectedRole == nil ? 0.4 : 1)
-                .animation(.easeInOut(duration: 0.2), value: selectedRole)
                 .padding(.horizontal, Sp.lg)
-                .padding(.bottom, Sp.xxl)
+                .padding(.bottom, 48)
                 .simultaneousGesture(TapGesture().onEnded {
                     if let role = selectedRole {
                         UserDefaults.standard.set(role == .hogar ? "hogar" : "recolector", forKey: "nexoRole")
                     }
                 })
             }
-            .padding(.top, Sp.lg)
-            .opacity(contentOpacity)
         }
-        .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .foregroundColor(.nexoDeep)
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.4))
                 }
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
-                contentOpacity = 1
-            }
+            withAnimation(.easeOut(duration: 0.4).delay(0.15)) { contentIn = true }
         }
     }
 }
 
-// MARK: - Role Card
+// MARK: - RoleCard
 struct RoleCard: View {
     let icon: String
     let title: String
@@ -126,68 +113,59 @@ struct RoleCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: Sp.md) {
-
-                // SF Symbol
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(isSelected ? .nexoDeep : Color(.systemGray2))
-                    .frame(width: 36, height: 36)
+                // Ícono
+                Image(systemName: isSelected ? icon + ".fill" : icon)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(isSelected ? Color.nexoAmber : Color.white.opacity(0.25))
+                    .frame(width: 32)
 
                 // Texto
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(isSelected ? .white : Color.white.opacity(0.55))
                     Text(description)
-                        .font(.system(size: 15, weight: .regular, design: .rounded))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12, weight: .light))
+                        .foregroundStyle(Color.white.opacity(0.25))
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer()
 
-                // Radio button
+                // Indicador
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 3)
                         .strokeBorder(
-                            isSelected ? Color.nexoDeep : Color(.systemGray4),
-                            lineWidth: 2
+                            isSelected ? Color.nexoAmber : Color.white.opacity(0.1),
+                            lineWidth: isSelected ? 1.5 : 0.5
                         )
-                        .frame(width: 22, height: 22)
+                        .frame(width: 18, height: 18)
                     if isSelected {
-                        Circle()
-                            .fill(Color.nexoDeep)
-                            .frame(width: 12, height: 12)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.nexoAmber)
                     }
                 }
             }
             .padding(Sp.md)
             .background(
                 RoundedRectangle(cornerRadius: Rd.md)
-                    .fill(Color(.systemGray6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Rd.md)
-                            .strokeBorder(
-                                isSelected ? Color.nexoDeep : Color.clear,
-                                lineWidth: 1.5
-                            )
+                    .fill(isSelected ? Color.white.opacity(0.04) : Color.white.opacity(0.02))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Rd.md)
+                    .strokeBorder(
+                        isSelected ? Color.nexoAmber.opacity(0.4) : Color.white.opacity(0.06),
+                        lineWidth: 0.5
                     )
             )
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
-// MARK: - App Role
-enum AppRole {
-    case hogar
-    case recolector
-}
+enum AppRole { case hogar, recolector }
 
-// MARK: - Preview
 #Preview {
-    NavigationStack {
-        ExplainView()
-    }
+    NavigationStack { ExplainView() }
 }

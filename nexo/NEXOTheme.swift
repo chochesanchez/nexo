@@ -3,13 +3,14 @@
 
 import SwiftUI
 
-// MARK: - Colors
 extension Color {
-    static let nexoDark  = Color(hex: "214F4B")
-    static let nexoBlue  = Color(hex: "A9DEF9")
-    static let nexoAmber = Color(hex: "FACF00")
-    static let nexoGreen = Color(hex: "45B15B")
-    static let nexoDeep  = Color(hex: "004F2D")
+    static let nexoBlack   = Color(hex: "0A0A0A")
+    static let nexoDeep    = Color(hex: "0D2B27")
+    static let nexoSurface = Color(hex: "F5F5F3")
+    static let nexoGreen   = Color(hex: "45B15B")
+    static let nexoAmber   = Color(hex: "FACF00")
+    static let nexoBlue    = Color(hex: "006D8F")
+    static let nexoDark    = Color(hex: "0A0A0A")  // legacy alias
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: .alphanumerics.inverted)
@@ -22,20 +23,19 @@ extension Color {
     }
 }
 
-// MARK: - Spacing
 enum Sp {
-    static let xs: CGFloat =  4
-    static let sm: CGFloat =  8
-    static let md: CGFloat = 16
-    static let lg: CGFloat = 24
-    static let xl: CGFloat = 32
+    static let xs:  CGFloat =  4
+    static let sm:  CGFloat =  8
+    static let md:  CGFloat = 16
+    static let lg:  CGFloat = 24
+    static let xl:  CGFloat = 32
     static let xxl: CGFloat = 48
 }
 
-// MARK: - Corner Radius
 enum Rd {
-    static let sm: CGFloat =  8
-    static let md: CGFloat = 16
-    static let lg: CGFloat = 24
+    static let xs:   CGFloat =  4
+    static let sm:   CGFloat =  6
+    static let md:   CGFloat = 10
+    static let lg:   CGFloat = 14
     static let pill: CGFloat = 100
 }

@@ -1,39 +1,46 @@
+// ScannerView.swift — Rediseño Bateman/Apple
 import SwiftUI
 import AVFoundation
 
 struct ScannerView: View {
     @Binding var appMode: AppMode
     @StateObject private var camera = CameraManager()
-    @State private var showFicha    = false
-    @State private var pulse        = false
+    @State private var showFicha = false
     @State private var btnScale: CGFloat = 1
+    @State private var pulse = false
 
     var body: some View {
         ZStack {
+            // Cámara full bleed
             CameraPreview(session: camera.session).ignoresSafeArea()
+
+            // Gradientes de vignette — mínimos
             VStack {
-                LinearGradient(colors: [.black.opacity(0.55), .clear],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: 160)
+                LinearGradient(
+                    colors: [.black.opacity(0.6), .clear],
+                    startPoint: .top, endPoint: .bottom
+                ).frame(height: 140)
                 Spacer()
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top, endPoint: .bottom
+                ).frame(height: 220)
             }.ignoresSafeArea()
-            VStack {
-                Spacer()
-                LinearGradient(colors: [.clear, .black.opacity(0.55)],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: 240)
-            }.ignoresSafeArea()
+
+            // UI
             VStack(spacing: 0) {
                 topBar
                 Spacer()
                 viewfinder
                 Spacer()
-                bottomCard
+                bottomControls
             }
         }
-        .onAppear   { camera.start() }
-        .onDisappear { camera.stop() }
-        .onChange(of: camera.detectedMaterial) { _, mat in if mat != nil { showFicha = true } }
+        .onAppear    { camera.start() }
+        .onDisappear { camera.stop()  }
+        .onChange(of: camera.detectedMaterial) { _, mat in
+            if mat != nil { showFicha = true }
+        }
         .fullScreenCover(isPresented: $showFicha) {
             if let mat = camera.detectedMaterial {
                 FichaView(
@@ -49,56 +56,75 @@ struct ScannerView: View {
                 }
             }
         }
-        .alert("Intenta de nuevo",
-               isPresented: .constant(camera.errorMessage != nil)) {
+        .alert("Intenta de nuevo", isPresented: .constant(camera.errorMessage != nil)) {
             Button("OK") { camera.errorMessage = nil }
         } message: { Text(camera.errorMessage ?? "") }
     }
 
+    // MARK: - Top bar
     private var topBar: some View {
-        HStack(alignment: .center) {
+        HStack {
             Text("NEXO")
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.system(size: 20, weight: .black))
+                .tracking(-1.5)
                 .foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
+
             Spacer()
-            HStack(spacing: 0) {
+
+            // Mode toggle — rectangular, no Capsule
+            HStack(spacing: 1) {
                 ForEach(AppMode.allCases, id: \.self) { mode in
                     Button {
-                        withAnimation(.spring(response: 0.3)) { appMode = mode }
+                        withAnimation(.easeOut(duration: 0.2)) { appMode = mode }
                     } label: {
                         Text(mode.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(appMode == mode ? Color.nexoDark : .white)
-                            .padding(.horizontal, 14).padding(.vertical, 7)
-                            .background(appMode == mode ? Color.white : .clear, in: Capsule())
+                            .font(.system(size: 10, weight: .semibold))
+                            .tracking(0.5)
+                            .foregroundStyle(appMode == mode ? Color.nexoBlack : Color.white.opacity(0.4))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(
+                                appMode == mode
+                                ? Color.white.opacity(0.92)
+                                : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                     .accessibilityLabel("Modo \(mode.rawValue)")
                 }
             }
-            .padding(3).background(.white.opacity(0.2), in: Capsule())
+            .padding(2)
+            .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
         }
-        .padding(.horizontal, Sp.lg).padding(.top, Sp.md)
+        .padding(.horizontal, Sp.lg)
+        .padding(.top, Sp.lg)
     }
 
+    // MARK: - Viewfinder — solo esquinas, sin caja
     private var viewfinder: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.white.opacity(0.6), lineWidth: 1.5)
-                .frame(width: 250, height: 250)
-                .scaleEffect(pulse ? 1.04 : 1)
-                .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pulse)
+            // Solo las 4 esquinas en ámbar, sin RoundedRectangle
+            CornerFrame(size: 150, cornerLen: 20, color: Color.nexoAmber.opacity(0.9), lw: 2)
+                .scaleEffect(pulse ? 1.03 : 1)
+                .animation(
+                    .easeInOut(duration: 2).repeatForever(autoreverses: true),
+                    value: pulse
+                )
                 .onAppear { pulse = true }
-            CornerFrame(size: 250, cornerLen: 28, color: .nexoAmber, lw: 3)
+
+            // Estado de análisis
             if camera.isAnalyzing {
-                RoundedRectangle(cornerRadius: 20).fill(.black.opacity(0.65))
-                    .frame(width: 250, height: 250)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.black.opacity(0.7))
+                    .frame(width: 150, height: 150)
                     .overlay {
-                        VStack(spacing: 14) {
-                            ProgressView().tint(.white).scaleEffect(1.4)
-                            Text("Analizando…")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.white)
+                        VStack(spacing: 10) {
+                            ProgressView().tint(.white).scaleEffect(1.2)
+                            Text("Identificando")
+                                .font(.system(size: 11, weight: .medium))
+                                .tracking(0.5)
+                                .foregroundStyle(Color.white.opacity(0.7))
                         }
                     }
             }
@@ -107,35 +133,55 @@ struct ScannerView: View {
         .accessibilityLabel(camera.isAnalyzing ? "Analizando residuo" : "Visor de cámara")
     }
 
-    private var bottomCard: some View {
-        VStack(spacing: Sp.lg) {
-            Text(camera.isAnalyzing ? "Un momento…" : "Apunta a un residuo y toca el botón")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
+    // MARK: - Bottom controls
+    private var bottomControls: some View {
+        VStack(spacing: 20) {
+            // Hint text
+            Text(camera.isAnalyzing ? "Identificando material…" : "Apunta al residuo y toca el botón")
+                .font(.system(size: 11, weight: .regular))
+                .tracking(0.3)
+                .foregroundStyle(Color.white.opacity(0.4))
                 .multilineTextAlignment(.center)
+
+            // Botón de captura — círculo ámbar limpio
             Button {
                 guard !camera.isAnalyzing else { return }
-                withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) { btnScale = 0.88 }
+                withAnimation(.spring(response: 0.18, dampingFraction: 0.5)) { btnScale = 0.88 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                     withAnimation(.spring(response: 0.3)) { btnScale = 1 }
                     camera.capture()
                 }
             } label: {
                 ZStack {
-                    Circle().fill(Color.nexoAmber).frame(width: 76, height: 76)
-                        .shadow(color: .nexoAmber.opacity(0.45), radius: 18, y: 6)
-                    Image(systemName: camera.isAnalyzing ? "hourglass" : "viewfinder")
-                        .font(.system(size: 30, weight: .semibold))
-                        .foregroundStyle(Color.nexoDeep)
+                    // Halo exterior
+                    Circle()
+                        .strokeBorder(Color.nexoAmber.opacity(0.25), lineWidth: 1)
+                        .frame(width: 68, height: 68)
+
+                    // Botón principal
+                    Circle()
+                        .fill(Color.nexoAmber)
+                        .frame(width: 56, height: 56)
+                        .overlay {
+                            if camera.isAnalyzing {
+                                ProgressView().tint(Color.nexoBlack).scaleEffect(0.8)
+                            } else {
+                                Circle()
+                                    .strokeBorder(Color.nexoBlack.opacity(0.2), lineWidth: 2)
+                                    .frame(width: 36, height: 36)
+                            }
+                        }
                 }
             }
-            .scaleEffect(btnScale).disabled(camera.isAnalyzing)
+            .scaleEffect(btnScale)
+            .disabled(camera.isAnalyzing)
             .accessibilityLabel("Escanear residuo")
         }
         .padding(.bottom, 52)
     }
 }
 
+// MARK: - CornerFrame (sin cambios, ya era correcto)
 struct CornerFrame: View {
     let size: CGFloat; let cornerLen: CGFloat; let color: Color; let lw: CGFloat
     var body: some View {
@@ -156,3 +202,4 @@ struct CornerFrame: View {
         .frame(width: size, height: size)
     }
 }
+

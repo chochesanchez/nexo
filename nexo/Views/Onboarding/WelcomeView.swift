@@ -6,134 +6,100 @@
 //
 import SwiftUI
 
-// MARK: - Wave shape
-struct WaveShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: 0))
-        path.addCurve(
-            to: CGPoint(x: rect.maxX, y: rect.height * 0.3),
-            control1: CGPoint(x: rect.maxX * 0.35, y: rect.height),
-            control2: CGPoint(x: rect.maxX * 0.65, y: 0)
-        )
-        path.addLine(to: CGPoint(x: rect.maxX, y: 0))
-        path.closeSubpath()
-        return path
-    }
-}
-
-// MARK: - Welcome View
 struct WelcomeView: View {
-    @State private var mascotScale: CGFloat = 4
-    @State private var mascotOffset: CGFloat = 1
-    @State private var bubbleOpacity: Double = 0
-    @State private var bubbleScale: CGFloat = 1
-    @State private var buttonOpacity: Double = 0
+    @State private var logoIn    = false
+    @State private var ruleIn    = false
+    @State private var taglineIn = false
+    @State private var btnsIn    = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.white.ignoresSafeArea()
+                Color.nexoBlack.ignoresSafeArea()
 
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Spacer()
 
-                    // MARK: Header
-                    ZStack(alignment: .bottomLeading) {
-                        Color.nexoGreen
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 220)
+                    // Eyebrow
+                    Text("Mexico · 2026")
+                        .font(.system(size: 9, weight: .semibold))
+                        .tracking(2.5)
+                        .foregroundStyle(Color.white.opacity(0.2))
+                        .textCase(.uppercase)
+                        .padding(.bottom, 20)
+                        .opacity(logoIn ? 1 : 0)
 
-                        VStack(alignment: .leading, spacing: Sp.xs) {
-                            Text("NEXO")
-                                .font(.system(size: 70, weight: .black, design: .rounded))
-                                .foregroundColor(.nexoDeep)
-                                .tracking(-2)
+                    // Logo
+                    Text("NEXO")
+                        .font(.system(size: 76, weight: .black))
+                        .tracking(-5)
+                        .foregroundStyle(.white)
+                        .scaleEffect(logoIn ? 1 : 0.92, anchor: .leading)
+                        .opacity(logoIn ? 1 : 0)
 
-                            Text("Conectando tus residuos\ncon su valor")
-                                .font(.system(size: 20, weight: .regular, design: .rounded))
-                                .foregroundColor(.nexoDeep.opacity(0.8))
-                                .lineSpacing(3)
-                        }
-                        .padding(.horizontal, Sp.lg)
-                        .padding(.bottom, Sp.lg)
-                    }
+                    // Regla
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 0.5)
+                        .padding(.top, 20)
+                        .padding(.bottom, 20)
+                        .scaleEffect(x: ruleIn ? 1 : 0, anchor: .leading)
+                        .opacity(ruleIn ? 1 : 0)
 
-                    // MARK: Wave
-                    WaveShape()
-                        .fill(Color.nexoGreen)
-                        .frame(height: 40)
-                        .offset(y: -1)
+                    // Tagline — peso light para contraste con el 900 del logo
+                    Text("Tus residuos\ntodavía tienen\nuna ruta.")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(Color.white.opacity(0.45))
+                        .lineSpacing(5)
+                        .opacity(taglineIn ? 1 : 0)
+                        .offset(y: taglineIn ? 0 : 8)
 
-                    // MARK: Mascota + Bubble
-                    ZStack(alignment: .top) {
-                        VStack {
-                            Spacer()
-                            Image("fingerUp")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 300)
-                                .scaleEffect(mascotScale)
-                                .offset(y: mascotOffset)
-                            Spacer()
-                        }
+                    Spacer()
 
-                        // Bubble arriba a la derecha de la mascota
-                        HStack {
-                            Spacer()
-                            Text("¡Aquí tus residuos sí valen!")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .foregroundColor(.nexoDeep)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .chatBubble(
-                                    position: .leadingBottom,
-                                    cornerRadius: 25,
-                                    color: .nexoAmber
-                                )
-                                .frame(width: 160)
-                                .opacity(bubbleOpacity)
-                                .scaleEffect(bubbleScale, anchor: .bottomLeading)
-                                .offset(x: -Sp.lg, y: 40)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, Sp.lg)
-
-
-                    // MARK: Botón
-                    VStack(spacing: 1) {
+                    // Botones
+                    VStack(spacing: 10) {
                         NavigationLink(destination: ExplainView()) {
-                            Text("Empezar")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(.nexoGreen)
+                            Text("Comenzar")
+                                .font(.system(size: 13, weight: .bold))
+                                .tracking(0.8)
+                                .textCase(.uppercase)
+                                .foregroundStyle(Color.nexoBlack)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(Color.nexoDeep)
-                                .clipShape(Capsule())
+                                .frame(height: 52)
+                                .background(Color.nexoAmber)
+                                .clipShape(RoundedRectangle(cornerRadius: Rd.sm))
+                        }
+
+                        NavigationLink(destination: LoginView()) {
+                            Text("Ya tengo cuenta")
+                                .font(.system(size: 13, weight: .regular))
+                                .tracking(0.3)
+                                .foregroundStyle(Color.white.opacity(0.3))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.white.opacity(0.04))
+                                .clipShape(RoundedRectangle(cornerRadius: Rd.sm))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: Rd.sm)
+                                        .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
+                                )
                         }
                     }
-                    .padding(.horizontal, Sp.lg)
-                    .padding(.bottom, Sp.xxl)
-                    .opacity(buttonOpacity)
+                    .opacity(btnsIn ? 1 : 0)
+                    .offset(y: btnsIn ? 0 : 12)
+                    .padding(.bottom, 48)
                 }
+                .padding(.horizontal, Sp.lg)
             }
-            .ignoresSafeArea(edges: .top)
+            .ignoresSafeArea()
             .onAppear {
-                withAnimation(.spring(response: 0.7, dampingFraction: 0.65).delay(0.1)) {
-                    mascotScale  = 1.0
-                    mascotOffset = 0
-                }
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.6).delay(0.65)) {
-                    bubbleOpacity = 1
-                    bubbleScale   = 1.0
-                }
-                withAnimation(.easeOut(duration: 0.4).delay(0.85)) {
-                    buttonOpacity = 1
-                }
+                withAnimation(.easeOut(duration: 0.5).delay(0.1))  { logoIn    = true }
+                withAnimation(.easeOut(duration: 0.6).delay(0.35)) { ruleIn    = true }
+                withAnimation(.easeOut(duration: 0.5).delay(0.5))  { taglineIn = true }
+                withAnimation(.easeOut(duration: 0.4).delay(0.75)) { btnsIn    = true }
             }
         }
     }
 }
 
-#Preview {
-    WelcomeView()
-}
+#Preview { WelcomeView() }
