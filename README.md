@@ -1,4 +1,9 @@
-# Nexo – 🌍 Waste Management & Recycling Made Simple
+
+<div align="center">
+
+<img src="nexo/Assets.xcassets/AppIcon.appiconset/nexo-logo.png" alt="Nexo App Icon" width="120" height="120" />
+
+# Nexo – Waste Management & Recycling Made Simple
 
 <div align="center">
 
@@ -39,18 +44,21 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ## ✨ Core Features
 
 ### 🔍 AI-Powered Waste Identification
+
 - **Real-time image scanning** with device camera
 - **YOLO-based detection** using on-device ML models for instant recognition
 - **Multi-language support** for Spanish and regional dialects
 - **99%+ accuracy** on common waste materials
 
 ### 📋 Smart Preparation Guidance
+
 - **AI-generated instructions** powered by Foundation Models (on-device)
 - **Context-aware recommendations** based on material type and local availability
 - **Preparation tips** including smell detection and best practices
 - **Compliance hints** for special waste categories (hazardous, electronics, etc.)
 
 ### 🗺️ Interactive Map & Discovery
+
 - **Real-time location mapping** of recycling centers and waste collectors
 - **Distance filtering** and routing integration with Apple Maps
 - **Live collector/center listings** with contact information
@@ -59,35 +67,41 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ### 👥 Multi-Role Support
 
 #### **Hogar (Household Mode)**
+
 - Scan and categorize personal waste
 - View preparation instructions
 - Find nearby recycling centers
 - Track personal environmental impact
 
 #### **Recolector (Collector Mode)**
+
 - Browse available material opportunities in the area
 - Manage collection routes and listings
 - Track collected materials and earnings
 
 #### **Empresa (Company Mode)**
+
 - Publish batch listings for certified waste managers
 - 2.5× impact multiplier for bulk materials
 - Specialized batch management interface
 - Access to certified collection networks
 
 ### 📊 Impact Tracking & Gamification
+
 - **Environmental metrics** – CO₂ avoided, water saved, waste diverted
 - **Scan history** with detailed material breakdown
 - **Impact statistics** dashboard
 - **User engagement** through achievement visualization
 
 ### 🔐 Authentication & User Profiles
+
 - **Email/password authentication** via Supabase
 - **User profiles** with avatar support
 - **Session management** across device restarts
 - **Role-based access control**
 
 ### 🎨 Native iOS Widgets
+
 - **Quick access** to scanner and history
 - **At-a-glance impact stats**
 - **WidgetKit integration** for home screen shortcuts
@@ -97,25 +111,30 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ## 🛠️ Tech Stack
 
 ### Core Technologies
+
 - **SwiftUI** – Modern, declarative UI framework
 - **SwiftData** – On-device data persistence
 - **AVFoundation** – Camera and real-time video processing
 - **CoreML & Vision** – On-device machine learning (YOLO model)
 
 ### AI & Intelligence
+
 - **FoundationModels API** – On-device LLM for instruction generation
 - **YOLO v8** – Object detection model packaged in `.mlpackage` format
 - **Vision Framework** – Image processing and classification
 
 ### Backend & Services
+
 - **Supabase** – PostgreSQL database, authentication, and storage
 - **Foundation** – Networking and async/await patterns
 
 ### Location & Maps
+
 - **MapKit** – Interactive maps and location services
 - **CoreLocation** – GPS and location authorization
 
 ### Architecture & State Management
+
 - **Combine** – Reactive programming framework
 - **MVVM Pattern** – Clean separation of concerns
 - **Dependency Injection** – Services architecture
@@ -125,6 +144,7 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - **Xcode 16+** (iOS 17+ SDK required)
 - **iOS 17 or later** deployment target
 - **CocoaPods** or **Swift Package Manager** for dependencies
@@ -133,26 +153,28 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/Nexo.git
    cd Nexo
    ```
 
 2. **Install dependencies**
+
    ```bash
    # If using CocoaPods
    pod install
-   
+
    # Or use Swift Package Manager within Xcode
    ```
 
 3. **Configure Supabase**
    - Create a `SupabaseConfig.swift` file in `nexo/Config/` (use `SupabaseConfigExample.swift` as template)
    - Add your Supabase project URL and API key
-   
+
    ```swift
    import Foundation
-   
+
    struct SupabaseConfig {
        static let projectURL = "YOUR_SUPABASE_URL"
        static let anonKey = "YOUR_SUPABASE_ANON_KEY"
@@ -160,6 +182,7 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
    ```
 
 4. **Open the project**
+
    ```bash
    open nexo.xcodeproj
    ```
@@ -169,6 +192,7 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
    - Press `Cmd + R` to build and run
 
 ### First Launch
+
 - Sign up with email and password
 - Grant camera permissions for waste scanning
 - Grant location permissions to find nearby recycling centers
@@ -180,6 +204,7 @@ The app supports three distinct user roles—**Hogar (Households)**, **Recolecto
 ## 🏗️ Project Architecture
 
 ### Directory Structure
+
 ```
 Nexo/
 ├── nexo/                          # Main app target
@@ -236,17 +261,20 @@ Nexo/
 ### Key Architectural Patterns
 
 **MVVM + Services Pattern**
+
 - Views observe @ObservedObject and @EnvironmentObject
 - ViewModels (Services) handle business logic
 - Models represent data structures
 - Services inject dependencies through environment
 
 **Reactive Patterns with Combine**
+
 - @Published properties trigger UI updates
 - Subscribers handle async operations
 - Error propagation through @Published var errorMessage
 
 **On-Device ML Architecture**
+
 - Vision Framework processes camera frames
 - YOLO model runs in CoreML
 - FoundationModels API for text generation (no network required)
@@ -256,6 +284,7 @@ Nexo/
 ## 🎯 Key Use Cases
 
 ### Household User (Hogar)
+
 1. Point camera at waste item
 2. App identifies material with AI
 3. Read preparation instructions (AI-generated)
@@ -263,12 +292,14 @@ Nexo/
 5. Track environmental impact in profile
 
 ### Waste Collector (Recolector)
+
 1. Browse available waste materials on map
 2. Check material requirements and locations
 3. Accept and track collection jobs
 4. Manage collection history
 
 ### Company/Bulk Generator (Empresa)
+
 1. Scan or manually enter bulk materials
 2. Create batch listings with quantity and type
 3. Publish to network of certified collectors
@@ -280,6 +311,7 @@ Nexo/
 ## 📊 Data Models
 
 ### Core Entities
+
 - **User** – Account with profile, email, phone, avatar
 - **FichaRegistro** – Individual waste scan record
 - **RecoleccionRegistro** – Collection/pickup record
@@ -289,7 +321,9 @@ Nexo/
 - **NEXOMaterial** – Material definition (ID, category, instructions, impact)
 
 ### Material Routing
+
 Each material follows one of three pathways:
+
 - **Reciclaje** (Recycling) – Standard recyclables
 - **Composta** (Composting) – Organic/green waste
 - **Acopio Especial** (Special Collection) – Hazardous/electronics
@@ -326,6 +360,7 @@ We welcome contributions from the community! Whether you're fixing bugs, improvi
 5. **Open a Pull Request**
 
 ### Development Guidelines
+
 - Follow Apple's [Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/)
 - Use descriptive variable and function names
 - Keep functions focused and under 100 lines when possible
@@ -343,7 +378,7 @@ This project is licensed under the MIT License – see LICENSE file for details.
 ## 👥 Team
 
 **iMakers** – Hackathon 2026 Winner  
-*Mexico City, MX*
+_Mexico City, MX_
 
 - Lead Development
 - Design & UX
