@@ -8,11 +8,14 @@ xcuserdata/
 .swiftpm/
 .build/
 
-# Supabase local config
+# Supabase local config (credentials - NEVER commit)
 nexo/SupabaseConfig.swift
 nexo/Config/SupabaseConfig.swift
 .env
 .env.*
+
+# macOS
+.DS_Store
 
 # iCloud
 .icloud
