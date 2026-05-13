@@ -1,5 +1,5 @@
 <div align="center">
-   <img src="nexo/Assets.xcassets/AppIcon.appiconset/nexo-logo.png" alt="Nexo App Icon" width="160" height="160" />
+   <img src="nexo/Assets.xcassets/AppIcon.appiconset/nexo-logo.png" alt="Nexo App Icon" width="250" height="250" />
 
 # Nexo
 # Waste Management & Recycling Made Simple
