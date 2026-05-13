@@ -1,22 +1,18 @@
-
 <div align="center">
-
-<img src="nexo/Assets.xcassets/AppIcon.appiconset/nexo-logo.png" alt="Nexo App Icon" width="120" height="120" />
+   <img src="nexo/Assets.xcassets/AppIcon.appiconset/nexo-logo.png" alt="Nexo App Icon" width="160" height="160" />
 
 # Nexo – Waste Management & Recycling Made Simple
-
-<div align="center">
 
 ![Nexo](https://img.shields.io/badge/🏆%202nd%20Place-Hackathon%202026-green?style=for-the-badge&color=2ecc71)
 ![Swift](https://img.shields.io/badge/Swift-5.10+-orange?style=for-the-badge&logo=swift)
 ![iOS](https://img.shields.io/badge/iOS-17%2B-blue?style=for-the-badge&logo=apple)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
 
+</div>
+
 **An intelligent iOS app that identifies waste using AI, guides proper preparation, and connects users with recycling centers and collectors.**
 
 [About](#about) • [Features](#features) • [Tech Stack](#tech-stack) • [Getting Started](#getting-started) • [Architecture](#architecture)
-
-</div>
 
 ---
 
